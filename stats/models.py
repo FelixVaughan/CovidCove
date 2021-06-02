@@ -6,10 +6,10 @@ class Time(models.Model):
 
 class Location(models.Model):
     name = models.CharField(max_length=20, blank=False)
-    total_cases = models.IntegerField(null=False, default = -1)
-    current_cases = models.IntegerField(null=False, default = -1)
-    recoveries = models.IntegerField(null=False, default = -1)
-    deaths = models.IntegerField(null=False, default = -1)
+    total_cases = models.IntegerField(default = -1)
+    current_cases = models.IntegerField(default = -1)
+    recoveries = models.IntegerField(default = -1)
+    deaths = models.IntegerField(default = -1)
     time = models.ForeignKey(Time, on_delete=CASCADE)
 
 class Country(Location):
