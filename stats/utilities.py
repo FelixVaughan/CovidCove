@@ -4,40 +4,13 @@ from .models import *
 import sys 
 import requests
 import json
+from dotenv import load_dotenv
 
-class Populator:
-    CRED = ""
-    HOST = ""
+load_dotenv()
 
-    def __init__(self):
-        try:
-            self.CRED = os.environ['CovidCoveCred']
-            self.HOST = os.environ['CovidCoveHost']
-        except KeyError as e:
-            print("Could Not Obtain API credentials!")
-            sys.exit(2)
-
-    def get_location_data(self):
-        headers={"x-rapidapi-key": self.CRED, "x-rapidapi-host": self.HOST}
-        countries_endpoint = "https://covid-19-statistics.p.rapidapi.com/regions"
-        countries_request = requests.get(countries_endpoint, headers=headers)
-        if[countries_request.status_code == "ok"]:
-            countries = countries_request.json()['data']
-            cnt = countries
-            counter = 0
-            for c in cnt:
-                prov_params = {'iso': c['iso']}
-                provinces_endpoint = "https://covid-19-statistics.p.rapidapi.com/provinces"
-                provs = requests.get(provinces_endpoint, headers=headers, params=prov_params).json()['data']
-                countries[counter]['provinces'] = provs
-                print(countries)
-                counter += 1
-            self.transform_data(countries)
-        else:
-            raise HTTPError
-
-    def transform_data(self, countries):
+def transform_data(countries):
         new_data = {}
+        print("in transform data")
         f = open('custom.geo.json')
         coords_data = json.load(open('custom.geo.json', 'r'))['features']
         for country in countries:
@@ -52,15 +25,42 @@ class Populator:
                     new_data[iso]['provinces'].append(province['province'])
 
         for data in coords_data:
-            iso = data['properties']['iso_a3']
-            coords = data['geometry']['coordinates'] #might not even need this, could possibly do a cross reference. Might be good to have tho
-            new_data[iso]['coordinates'] = coords
+            try:
+                iso = data['properties']['iso_a3']
+                coords = data['geometry']['coordinates'] #might not even need this, could possibly do a cross reference. Might be good to have tho
+                new_data[iso]['coordinates'] = coords
+            except KeyError:
+                print(f"Error occured on iso {iso} for coored {coords}")
+                continue
+        save_to_file = open("./cleaned_data","w")
+        save_to_file.write(str(new_data))
+        save_to_file.close()
+        f.close()
         
-        
+def get_api_data():
+    try:
+        CRED = os.environ['CovidCoveCred']
+        HOST = os.environ['CovidCoveHost']
+        api_key = os.environ['api_key']
+        api_host = os.environ['api_host']
+        countries_endpoint = os.environ['location_endpoint']
+        provinces_endpoint = os.environ['province_location_endpoint']
+    except KeyError as e:
+        print("Could Not Obtain API credentials!")
+        sys.exit(2)
 
-pop = Populator()
-pop.get_location_data()
+    headers={api_key: CRED, api_host: HOST}
+    countries_request = requests.get(countries_endpoint, headers=headers)
+    if[countries_request.status_code == "ok"]:
+        countries = countries_request.json()['data']
+        cnt = countries
+        counter = 0
+        for c in cnt:
+            prov_params = {'iso': c['iso']}
+            provs = requests.get(provinces_endpoint, headers=headers, params=prov_params).json()['data']
+            countries[counter]['provinces'] = provs
+            counter += 1
+        transform_data(countries)
+    else:
+        raise HTTPError
 
-#TODO
-# get longtitude and latitude data for countries
-# get data according to time

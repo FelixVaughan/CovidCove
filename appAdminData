@@ -2,9 +2,3 @@ Google Credentials
 password: covidcove2k21
 username: covidcovecrew[@gmail.com]
 
-
-To access apis add these to ~/.profile file:
-export CovidCoveCred="e990ddad2cmshaf6b8c9b59dc795p11e886jsn9a49dad45a7e"
-export CovidCoveAppName="default-application_5300527"
-export CovidCoveHost="covid-19-statistics.p.rapidapi.com"
-
