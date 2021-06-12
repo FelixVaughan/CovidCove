@@ -33,7 +33,7 @@ def transform_data(countries):
                 print(f"Error occured on iso {iso} for coored {coords}")
                 continue
         save_to_file = open("./cleaned_data","w")
-        save_to_file.write(str(new_data))
+        save_to_file.write(json.dumps(new_data))
         save_to_file.close()
         f.close()
         
@@ -64,3 +64,30 @@ def get_api_data():
     else:
         raise HTTPError
 
+
+
+##############################################################################
+#                            Time Model Helper                               #
+##############################################################################
+def get_last_time():
+        if(len(Last_time.objects.all()) < 1):
+            Last_time.objects.create()
+        last_date = Last_time.objects.get(pk=1)
+        return last_date.time
+
+def update(): 
+    if(len(Last_time.objects.all()) < 1):
+        sys.stderr.write("'Last_time' table is empty")
+        sys.exit(1)
+    last_date = Last_time.objects.get(pk=1)
+    current_time = datetime.date.today().strftime("%Y-%m-%d")
+    last_date.time = current_time
+    last_date.save()
+
+def reset():
+    if(len(Last_time.objects.all()) < 1):
+        sys.stderr.write("'Last_time' table is empty")
+        sys.exit(1)
+    last_date = Last_time.objects.get(pk=1)
+    last_date.time = "2019-12-30"
+    last_date.save()
