@@ -5,9 +5,56 @@ import sys
 import requests
 import json
 from dotenv import load_dotenv
-
+import datetime
 load_dotenv()
 
+
+
+
+##############################################################################
+#                            Time Model Helper                               #
+##############################################################################
+def get_last_time():
+        if(len(Last_update.objects.all()) < 1):
+            Last_update.objects.create()
+        last_date = Last_update.objects.get(pk=1)
+        return last_date.time
+
+def update_time(): 
+    if(len(Last_update.objects.all()) < 1):
+        sys.stderr.write("'Last_update' table is empty")
+        sys.exit(1)
+    last_date = Last_update.objects.get(pk=1)
+    current_time = datetime.date.today().strftime("%Y-%m-%d")
+    last_date.time = current_time
+    last_date.save()
+
+def reset():
+    if(len(Last_update.objects.all()) < 1):
+        sys.stderr.write("'Last_update' table is empty")
+        sys.exit(1)
+    last_date = Last_update.objects.get(pk=1)
+    last_date.time = "2019-12-31"
+    last_date.save()
+
+
+##############################################################################
+#                            Data Fetching Functions                         #
+##############################################################################
+def get_api_info():
+    try:
+        api_info = {
+            "countries_endpoint": os.environ['countries_endpoint'],
+            "location_endpoint": os.environ['location_endpoint'],
+            "provinces_endpoint": os.environ['province_location_endpoint'],
+            "totals_endpoint": os.environ['total_states_endpoint'],
+            "headers": {os.environ['api_key']: os.environ['key'], os.environ['host_addr']: os.environ['host']}
+        }
+    except KeyError:
+        sys.stderr.write("FATAL ERROR: could not obtain api credentials!")
+        sys.exit(1)
+    return api_info
+    
 def transform_data(countries):
         new_data = {}
         print("in transform data")
@@ -38,26 +85,17 @@ def transform_data(countries):
         f.close()
         
 def get_api_data():
-    try:
-        CRED = os.environ['CovidCoveCred']
-        HOST = os.environ['CovidCoveHost']
-        api_key = os.environ['api_key']
-        api_host = os.environ['api_host']
-        countries_endpoint = os.environ['location_endpoint']
-        provinces_endpoint = os.environ['province_location_endpoint']
-    except KeyError as e:
-        print("Could Not Obtain API credentials!")
-        sys.exit(2)
+    credentials = get_api_info()
 
-    headers={api_key: CRED, api_host: HOST}
-    countries_request = requests.get(countries_endpoint, headers=headers)
+    headers=credentials['headers']
+    countries_request = requests.get(credentials['locations_endpoint'], headers=headers)
     if[countries_request.status_code == "ok"]:
         countries = countries_request.json()['data']
         cnt = countries
         counter = 0
         for c in cnt:
             prov_params = {'iso': c['iso']}
-            provs = requests.get(provinces_endpoint, headers=headers, params=prov_params).json()['data']
+            provs = requests.get(credentials['province_location_endpoint'], headers=headers, params=prov_params).json()['data']
             countries[counter]['provinces'] = provs
             counter += 1
         transform_data(countries)
@@ -65,29 +103,9 @@ def get_api_data():
         raise HTTPError
 
 
+def populate_tables():
+    last_update = get_last_time()
+    start = datetime.datetime.strptime(last_update, "%Y-%m-%d")
+    end = datetime.today().strptime("%Y-%m-%d")
 
-##############################################################################
-#                            Time Model Helper                               #
-##############################################################################
-def get_last_time():
-        if(len(Last_time.objects.all()) < 1):
-            Last_time.objects.create()
-        last_date = Last_time.objects.get(pk=1)
-        return last_date.time
 
-def update(): 
-    if(len(Last_time.objects.all()) < 1):
-        sys.stderr.write("'Last_time' table is empty")
-        sys.exit(1)
-    last_date = Last_time.objects.get(pk=1)
-    current_time = datetime.date.today().strftime("%Y-%m-%d")
-    last_date.time = current_time
-    last_date.save()
-
-def reset():
-    if(len(Last_time.objects.all()) < 1):
-        sys.stderr.write("'Last_time' table is empty")
-        sys.exit(1)
-    last_date = Last_time.objects.get(pk=1)
-    last_date.time = "2019-12-30"
-    last_date.save()
