@@ -8,6 +8,19 @@ class Time(models.Model):
     time = models.TimeField(auto_now=False, auto_now_add=False)
 
 
+"""
+# model to store daily stats for every country, region
+# if used, we donot need the Time model above
+
+class DailyRecords(models.Model):
+    date =  models.DateField(default=datetime.date.today)
+    new_cases = models.IntegerField(default=0)
+    deaths = models.IntegerField(default=0)
+    country = models.ForeignKey(Country, on_delete=CASCADE)
+    region = models.ForeignKey(Region, on_delete=CASCADE, null=True)
+"""
+
+
 class Location(models.Model):
     name = models.CharField(max_length=20, blank=False,
                             editable=False, default="N/A")
@@ -26,10 +39,18 @@ class Location(models.Model):
 class Country(Location):
     iso = models.CharField(max_length=3, editable=False, default="N/A")
 
+    # whenever a country is called using pk, return country's iso
+    def __str__(self):
+        return self.iso
+
 
 class Region(Location):
     in_country = models.ForeignKey(Country, on_delete=models.CASCADE)
     coordinates = models.CharField(max_length=3)
+
+    # whenever a region is called using pk, return country's iso
+    def __str__(self):
+        return self.name
 
 
 class Global(Location):  # Stores the global total
