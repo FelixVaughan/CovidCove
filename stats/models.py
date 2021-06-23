@@ -5,7 +5,10 @@ import sys
 
 
 class Time(models.Model):
-    time = models.TimeField(auto_now=False, auto_now_add=False)
+    time = models.CharField(default="N/A", max_length=10)
+
+    def __str__(self):
+        return str(self.time)
 
 
 """
@@ -39,24 +42,26 @@ class Location(models.Model):
 class Country(Location):
     iso = models.CharField(max_length=3, editable=False, default="N/A")
 
-    # whenever a country is called using pk, return country's iso
     def __str__(self):
-        return self.iso
+        return f"name: {self.name} iso: {self.iso} active: {self.active} recoveried: {self.recoveries} deaths: {self.deaths} confirmed: {self.confirmed} fr: {self.fatality_rate}"
 
 
 class Region(Location):
     in_country = models.ForeignKey(Country, on_delete=models.CASCADE)
     coordinates = models.CharField(max_length=3)
 
-    # whenever a region is called using pk, return country's iso
     def __str__(self):
-        return self.name
+        return f"country: {self.in_country} name: {self.name} active: {self.active} recoveried: {self.recoveries} deaths: {self.deaths} confirmed: {self.confirmed} fr: {self.fatality_rate}"
 
 
 class Global(Location):  # Stores the global total
-    pass
+    def __str__(self):
+        return f"active: {self.active} recoveried: {self.recoveries} deaths: {self.deaths} confirmed: {self.confirmed} fr: {self.fatality_rate}"
 
 
 # should only ever be one entry in this table. Stores the date the db was last refreshed
 class Last_update(models.Model):
-    time = models.CharField(default="2019-12-31", max_length=8)
+    time = models.CharField(default="2019-12-31", max_length=10)
+    
+    def __str__(self):
+        return self.time
