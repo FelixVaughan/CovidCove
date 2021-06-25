@@ -101,11 +101,10 @@ def populate_tables():
     if start == end:
         return
     day = datetime.timedelta(days=1)
-    current_date = start
+    current_date = datetime.date(2021, 3, 20) #STRICTLY FOR TESTING
     headers=credentials['headers']
-    print(f"COMMENCING LOOP\n current_date: {current_date} credentials: {credentials}")
     while current_date < end:
-        #print(f"Current time is {str(current_date)}")
+        print(str(current_date))
         try:
             global_data_request = requests.get(credentials['totals_endpoint'], headers=headers, params={"date": current_date})
         except requests.exceptions.ConnectionError:
@@ -115,23 +114,19 @@ def populate_tables():
         if(global_data_request.status_code == 200):
             data = global_data_request.json()['data']
             entry = Global()
-            print("retrieved global stats with", end=" ")
             if(data):
-                print(entry)
                 entry.confirmed = data['confirmed']
                 entry.deaths = data['deaths'] 
                 entry.recoveries = data['recovered']
                 entry.active = data['active']
                 entry.fatality_rate = data['fatality_rate']
-                print(entry)
+                entry.time = str(current_date)
             else:
-                print("no data")
                 pass
                 #log could not get data for date       
             entry.save()
 
         else:
-            print("global data not recieved at all")
             #log failure
             pass
 
@@ -142,7 +137,6 @@ def populate_tables():
             #retry
         for iso in locations:
             country_name = locations[iso]
-            print(f"current country is {country_name}")
             try: 
                 country_data_request = requests.get(credentials['countries_endpoint'], headers=headers, params={"date": current_date, "iso": iso})
             except requests.exceptions.ConnectionError:
@@ -150,7 +144,6 @@ def populate_tables():
                 country_data_request = requests.get(credentials['countries_endpoint'], headers=headers, params={"date": current_date, "iso": iso})
             total_deaths = total_recovered = total_active = total_confirmed = total_fr = total_regions = 0 
             if country_data_request.status_code == 200:
-                print("country request success")
                 country = Country.objects.create(iso=iso, name=country_name, time=str(current_date))
                 areas = country_data_request.json()['data'] #note sometimes area IS the country in the case of only one entry
                 for area in areas:
@@ -159,7 +152,6 @@ def populate_tables():
                     recoveries = area['recovered']
                     active = area['active']
                     f_rate = area['fatality_rate']
-                    coords = f"{area['region']['lat']} {area['region']['long']}" 
                     province = area['region']['province']
                     total_deaths += deaths
                     total_recovered += recoveries
@@ -167,25 +159,20 @@ def populate_tables():
                     total_confirmed += confirmed
                     total_fr += f_rate
                     total_regions += 1
-                    print(f"province is: {province}")
                     if province == "": #means these are country level stats, not provincial
                         continue
-                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, fatality_rate=f_rate, coordinates=coords, in_country=country, time=str(current_date)) 
-                    print(reg)
+                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, fatality_rate=f_rate, in_country=country, time=str(current_date)) 
                 country.active = total_active
                 country.recoveries = total_recovered
                 country.deaths = total_deaths
                 country.confirmed = total_confirmed
                 if(total_regions):
                     country.fatality_rate = (total_fr)/total_regions
-                print(country)
             else:
                 #log could not get data for date
                 pass
         current_date += day
-        print(current_date)
     now = datetime.date.today().strftime("%Y-%m-%d")
-    print(f"Pull time updated FROM {start} to {now}")
     #update_time()
 
 def clear_tables():
@@ -194,16 +181,11 @@ def clear_tables():
     Region.objects.all().delete()
 
 populate_tables()
-# try:
-    #populate_tables()
-# except Exception as e:
-    # print(e)
-    # print(f"There was an exception: \n{e}")
-    # uin = input("Would you like to clear Global, Country and Region tables (y/n)? ")
-    # if(uin.upper() == "y"):
-    #     clear_tables()
-    # uin = input("Would you like to update time (y/n)? ")
-    # if (uin.upper() == "y"):
-    #     update_time()
-    # sys.exit(1)
 
+
+
+
+#jsonify model objects
+#add method that converts json to csv
+#add method that creates iso IDs for countries in chloropleth map. 
+ 

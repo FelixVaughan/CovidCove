@@ -37,13 +37,13 @@ class Location(models.Model):
 class Country(Location):
     iso = models.CharField(max_length=3, editable=False, default="N/A")
     def __str__(self):
-        return f"{self.name} ({self.iso}) with {self.active} active cases, {self.recoveries} recoveries, {self.deaths} deaths, {self.confirmed} confirmed and a fatality rate of {self.fatality_rate} for {self.time} "
+        return f"{self.name} ({self.iso}) with {self.active} active cases, {self.recoveries} recoveries, {self.deaths} deaths, {self.confirmed} confirmed and a fatality rate of {self.fatality_rate} for {self.time}"
 
 
 class Region(Location):
     in_country = models.ForeignKey(Country, on_delete=models.CASCADE)
     def __str__(self):
-        return f"{self.name}', in country {self.in_country} has {self.active} active cases, {self.recoveries} recoveries, {self.deaths} deaths, {self.confirmed} confirmed and a fatality rate of {self.fatality_rate} for {self.time} "
+        return f"{self.name}', in country {self.in_country} has {self.active} active cases, {self.recoveries} recoveries, {self.deaths} deaths, {self.confirmed} confirmed and a fatality rate of {self.fatality_rate} for {self.time}"
 
 
 class Global(Location):  # Stores the global total
