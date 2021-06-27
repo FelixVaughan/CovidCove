@@ -6,4 +6,3 @@ env/
 stats/migrations/
 stats/__pycache__/
 CovidCove/__pycache__/
-db.sqlite3

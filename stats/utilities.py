@@ -55,23 +55,7 @@ def get_credentials():
         sys.stderr.write("FATAL ERROR: could not obtain api credentials!")
         sys.exit(1)
     return api_info
-    
-# def transform_data(countries):
-#         new_data = {}
-#         for country in countries:
-#             iso = country['iso']
-#             new_data[iso] = {}
-#             new_data[iso]['name'] = country['name']
-#             new_data[iso]['provinces'] = []
-#             new_data[iso]['coordinates'] = []
-#             provinces = country['provinces'] 
-#             if provinces: 
-#                 for province in provinces:
-#                     new_data[iso]['provinces'].append(province['province'])
-#         save_to_file = open("./cleaned_data","w")
-#         save_to_file.write(json.dumps(new_data))
-#         save_to_file.close()
-        
+
 def fetch_location_properties():
     credentials = get_credentials()
     headers=credentials['headers']
@@ -115,10 +99,14 @@ def populate_tables():
             data = global_data_request.json()['data']
             entry = Global()
             if(data):
-                entry.confirmed = data['confirmed']
-                entry.deaths = data['deaths'] 
-                entry.recoveries = data['recovered']
-                entry.active = data['active']
+                entry.total_confirmed = data['confirmed']
+                entry.total_deaths = data['deaths'] 
+                entry.total_recoveries = data['recovered']
+                entry.total_active = data['active']
+                entry.confirmed = data['confirmed_diff']
+                entry.deaths = data['deaths_diff'] 
+                entry.recoveries = data['recovered_diff']
+                entry.active = data['active_diff']
                 entry.fatality_rate = data['fatality_rate']
                 entry.time = str(current_date)
             else:
@@ -134,7 +122,7 @@ def populate_tables():
             locations = json.load(open("cleaned_data.json","r"))
         except FileNotFoundError:
             fetch_location_properties()
-            #retry
+            locations = json.load(open("cleaned_data.json","r"))
         for iso in locations:
             country_name = locations[iso]
             try: 
@@ -142,32 +130,47 @@ def populate_tables():
             except requests.exceptions.ConnectionError:
                 time.sleep(15)
                 country_data_request = requests.get(credentials['countries_endpoint'], headers=headers, params={"date": current_date, "iso": iso})
-            total_deaths = total_recovered = total_active = total_confirmed = total_fr = total_regions = 0 
+            country_total_deaths_on_day = country_total_recovered_on_day = country_total_active_on_day = country_total_confirmed_on_day  = country_total_fr = total_regions = 0 
+            country_deaths_overall = country_recovered_overall = country_active_overall = country_confirmed_overall = 0
             if country_data_request.status_code == 200:
                 country = Country.objects.create(iso=iso, name=country_name, time=str(current_date))
                 areas = country_data_request.json()['data'] #note sometimes area IS the country in the case of only one entry
                 for area in areas:
-                    confirmed = area['confirmed']
-                    deaths = area['deaths']
-                    recoveries = area['recovered']
-                    active = area['active']
+                    confirmed = area['confirmed_diff']
+                    deaths = area['deaths_diff']
+                    recoveries = area['recovered_diff']
+                    active = area['active_diff']
+                    total_confirmed = area['confirmed']
+                    total_deaths = area['deaths']
+                    total_recoveries = area['recovered']
+                    total_active = area['active']
                     f_rate = area['fatality_rate']
                     province = area['region']['province']
-                    total_deaths += deaths
-                    total_recovered += recoveries
-                    total_active += active
-                    total_confirmed += confirmed
-                    total_fr += f_rate
+                    country_total_deaths_on_day += deaths
+                    country_total_recovered_on_day += recoveries
+                    country_total_active_on_day += active
+                    country_total_confirmed_on_day += confirmed
+                    country_deaths_overall += total_deaths
+                    country_active_overall += total_active
+                    country_confirmed_overall += total_confirmed
+                    country_recovered_overall += total_recoveries
+                    country_total_fr += f_rate
                     total_regions += 1
                     if province == "": #means these are country level stats, not provincial
                         continue
-                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, fatality_rate=f_rate, in_country=country, time=str(current_date)) 
-                country.active = total_active
-                country.recoveries = total_recovered
-                country.deaths = total_deaths
-                country.confirmed = total_confirmed
+                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, total_active=total_active, total_recoveries=total_recoveries, total_deaths=total_deaths, total_confirmed=total_confirmed, fatality_rate=f_rate, in_country=country, time=str(current_date)) 
+                country.active = country_total_active_on_day
+                country.recoveries = country_total_recovered_on_day
+                country.deaths = country_total_deaths_on_day
+                country.confirmed = country_total_confirmed_on_day
+                country.total_active = country_active_overall
+                country.total_deaths = country_deaths_overall
+                country.total_recoveries = country_recovered_overall
+                country.total_confirmed = country_confirmed_overall
+                country.regions = total_regions
                 if(total_regions):
-                    country.fatality_rate = (total_fr)/total_regions
+                    country.fatality_rate = (country_total_fr)/total_regions
+                country.save()
             else:
                 #log could not get data for date
                 pass
@@ -180,7 +183,9 @@ def clear_tables():
     Country.objects.all().delete()
     Region.objects.all().delete()
 
+clear_tables()
 populate_tables()
+
 
 
 
@@ -188,4 +193,5 @@ populate_tables()
 #jsonify model objects
 #add method that converts json to csv
 #add method that creates iso IDs for countries in chloropleth map. 
- 
+#add function to get data by month
+#add function to get data by year

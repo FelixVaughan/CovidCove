@@ -26,7 +26,11 @@ class Location(models.Model):
     recoveries = models.IntegerField(default=-1)
     deaths = models.IntegerField(default=-1)
     confirmed = models.IntegerField(default=-1)
-    time = models.CharField(max_length=10)
+    total_active = models.IntegerField(default=-1)
+    total_recoveries = models.IntegerField(default=-1)
+    total_deaths = models.IntegerField(default=-1)
+    total_confirmed = models.IntegerField(default=-1)
+    time = models.CharField(max_length=10) 
     fatality_rate = models.DecimalField(
         default=0.00, decimal_places=2, max_digits=4)
 
@@ -36,6 +40,7 @@ class Location(models.Model):
 
 class Country(Location):
     iso = models.CharField(max_length=3, editable=False, default="N/A")
+    regions = models.IntegerField(default=-1)
     def __str__(self):
         return f"{self.name} ({self.iso}) with {self.active} active cases, {self.recoveries} recoveries, {self.deaths} deaths, {self.confirmed} confirmed and a fatality rate of {self.fatality_rate} for {self.time}"
 
