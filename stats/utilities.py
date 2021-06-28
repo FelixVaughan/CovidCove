@@ -183,7 +183,9 @@ def clear_tables():
     Country.objects.all().delete()
     Region.objects.all().delete()
 
-clear_tables()
+uin = input("clear tables (y/n)?")
+if uin.lower() == "y":
+    clear_tables()
 populate_tables()
 
 
