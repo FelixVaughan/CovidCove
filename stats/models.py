@@ -4,9 +4,6 @@ import datetime
 import sys
 
 
-
-
-
 """
 # model to store daily stats for every country, region
 # if used, we donot need the day model above
@@ -21,7 +18,7 @@ class DailyRecords(models.Model):
 
 
 class Location(models.Model):
-    name = models.CharField(max_length=20, blank=False, editable=False, default="N/A")
+    name = models.CharField(max_length=20, blank=False, editable=False)
     active = models.IntegerField(default=-1)
     recoveries = models.IntegerField(default=-1)
     deaths = models.IntegerField(default=-1)
@@ -47,6 +44,7 @@ class Country(Location):
 
 class Region(Location):
     in_country = models.ForeignKey(Country, on_delete=models.CASCADE)
+
     def __str__(self):
         return f"{self.name}', in country {self.in_country} has {self.active} active cases, {self.recoveries} recoveries, {self.deaths} deaths, {self.confirmed} confirmed and a fatality rate of {self.fatality_rate} for {self.time}"
 
@@ -59,5 +57,6 @@ class Global(Location):  # Stores the global total
 # should only ever be one entry in this table. Stores the date the db was last refreshed
 class Last_update(models.Model):
     time = models.CharField(default="2019-12-31", max_length=10)
+
     def __str__(self):
         return self.time
