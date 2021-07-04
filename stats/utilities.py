@@ -26,16 +26,16 @@ def update_time():
         sys.stderr.write("'Last_update' table is empty")
         sys.exit(1)
     last_date = Last_update.objects.get(pk=1)
-    current_time = datetime.date.today().strftime("%Y-%m-%d")
+    current_time = datetime.date.today()
     last_date.time = current_time
     last_date.save()
 
 def reset():
     if(len(Last_update.objects.all()) < 1):
-        sys.stderr.write("'Last_update' table is empty")
+        sys.stderr.write("'Last_update' table is empty. Aborted reset.")
         sys.exit(1)
     last_date = Last_update.objects.get(pk=1)
-    last_date.time = "2019-12-31"
+    last_date.time = datetime.date(2019,12,31)
     last_date.save()
 
 
@@ -49,6 +49,7 @@ def get_credentials():
             "location_endpoint": os.environ['location_endpoint'],
             "provinces_endpoint": os.environ['province_location_endpoint'],
             "totals_endpoint": os.environ['total_states_endpoint'],
+            "population_endpoint": os.environ['population_endpoint'],
             "headers": {os.environ['api_key']: os.environ['key'], os.environ['host_addr']: os.environ['host']}
         }
     except KeyError:
@@ -79,16 +80,17 @@ def fetch_location_properties():
 #######################################################################################################
 def populate_tables():
     credentials = get_credentials()
-    date = [int(digit) for digit in get_last_time().split("-")] #integer list compression of last updated date 
-    start = datetime.date(date[0], date[1], date[2])
+    #date = [int(digit) for digit in get_last_time().split("-")] #integer list compression of last updated date 
+    start = get_last_time() 
+    #start = datetime.date(date[0], date[1], date[2])
     end = datetime.date.today()
     if start == end:
         return
     day = datetime.timedelta(days=1)
     current_date = datetime.date(2021, 3, 20) #STRICTLY FOR TESTING
     headers=credentials['headers']
-    while current_date < end:
-        print(str(current_date))
+    while current_date <= end:
+        print(f"Retrieving for: {current_date}")
         try:
             global_data_request = requests.get(credentials['totals_endpoint'], headers=headers, params={"date": current_date})
         except requests.exceptions.ConnectionError:
@@ -108,7 +110,9 @@ def populate_tables():
                 entry.recoveries = data['recovered_diff']
                 entry.active = data['active_diff']
                 entry.fatality_rate = data['fatality_rate']
-                entry.time = str(current_date)
+                entry.time = current_date
+                entry.time_as_string = str(current_date)
+
             else:
                 pass
                 #log could not get data for date       
@@ -133,7 +137,7 @@ def populate_tables():
             country_total_deaths_on_day = country_total_recovered_on_day = country_total_active_on_day = country_total_confirmed_on_day  = country_total_fr = total_regions = 0 
             country_deaths_overall = country_recovered_overall = country_active_overall = country_confirmed_overall = 0
             if country_data_request.status_code == 200:
-                country = Country.objects.create(iso=iso, name=country_name, time=str(current_date))
+                country = Country.objects.create(iso=iso, name=country_name, time=current_date, time_as_string=str(current_date))
                 areas = country_data_request.json()['data'] #note sometimes area IS the country in the case of only one entry
                 for area in areas:
                     confirmed = area['confirmed_diff']
@@ -158,7 +162,7 @@ def populate_tables():
                     total_regions += 1
                     if province == "": #means these are country level stats, not provincial
                         continue
-                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, total_active=total_active, total_recoveries=total_recoveries, total_deaths=total_deaths, total_confirmed=total_confirmed, fatality_rate=f_rate, in_country=country, time=str(current_date)) 
+                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, total_active=total_active, total_recoveries=total_recoveries, total_deaths=total_deaths, total_confirmed=total_confirmed, fatality_rate=f_rate, in_country=country, time=current_date, time_as_string=str(current_date)) 
                 country.active = country_total_active_on_day
                 country.recoveries = country_total_recovered_on_day
                 country.deaths = country_total_deaths_on_day
@@ -170,10 +174,16 @@ def populate_tables():
                 country.regions = total_regions
                 if(total_regions):
                     country.fatality_rate = (country_total_fr)/total_regions
-                country.save()
             else:
                 #log could not get data for date
                 pass
+            population_req = requests.get(f"{credentials['population_endpoint']}/{iso}")
+            if(population_req.status_code == 200):
+                pop = int(population_req.json()["population"])
+                country.pop = pop 
+            else:
+                sys.stderr.write("could not get population data for {country} on {current_date}")
+            country.save()
         current_date += day
     now = datetime.date.today().strftime("%Y-%m-%d")
     #update_time()
@@ -183,6 +193,7 @@ def clear_tables():
     Country.objects.all().delete()
     Region.objects.all().delete()
 
+#populate_tables()
 uin = input("clear tables (y/n)?")
 if uin.lower() == "y":
     clear_tables()
