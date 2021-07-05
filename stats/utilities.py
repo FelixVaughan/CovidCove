@@ -13,7 +13,7 @@ load_dotenv()
 
 
 ##############################################################################
-#                            Last_time Model Helper                          #
+#                            Last_time Model Helpers                          #
 ##############################################################################
 def get_last_time():
         if(len(Last_update.objects.all()) < 1):
@@ -182,7 +182,7 @@ def populate_tables():
                 pop = int(population_req.json()["population"])
                 country.pop = pop 
             else:
-                sys.stderr.write("could not get population data for {country} on {current_date}")
+                sys.stderr.write(f"could not get population data for {country} on {current_date}")
             country.save()
         current_date += day
     now = datetime.date.today().strftime("%Y-%m-%d")
@@ -208,3 +208,9 @@ populate_tables()
 #add method that creates iso IDs for countries in chloropleth map. 
 #add function to get data by month
 #add function to get data by year
+
+#possible color schemes
+
+# #2596BE
+# HEX
+# #2596be
