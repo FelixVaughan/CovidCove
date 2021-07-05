@@ -19,14 +19,14 @@ class DailyRecords(models.Model):
 
 class Location(models.Model):
     name = models.CharField(max_length=20, blank=False, editable=False)
-    active = models.IntegerField(default=-1)
-    recoveries = models.IntegerField(default=-1)
-    deaths = models.IntegerField(default=-1)
-    confirmed = models.IntegerField(default=-1)
-    total_active = models.IntegerField(default=-1)
-    total_recoveries = models.IntegerField(default=-1)
-    total_deaths = models.IntegerField(default=-1)
-    total_confirmed = models.IntegerField(default=-1)
+    active = models.IntegerField(default=0)
+    recoveries = models.IntegerField(default=0)
+    deaths = models.IntegerField(default=0)
+    confirmed = models.IntegerField(default=0)
+    total_active = models.IntegerField(default=0)
+    total_recoveries = models.IntegerField(default=0)
+    total_deaths = models.IntegerField(default=0)
+    total_confirmed = models.IntegerField(default=0)
     time_as_string = models.CharField(max_length=10, default="n/a")
     time = models.DateField(max_length=10) 
     fatality_rate = models.DecimalField(
