@@ -26,6 +26,33 @@ available_dates = country_dataset['time'].drop_duplicates().tolist() #note, fata
 #                                    End Init/Server Wide Variables                                  #
 ######################################################################################################
 
+
+#####################discrete graph creators####################
+def create_line_plot(df, x, column, attr, title):
+    fig = px.scatter(df, y=column, x=x, color=attr, title=title)
+    fig.update_traces(mode='lines+markers')
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(type='linear')
+    return fig
+
+
+def create_bar_plot(df, x, y, title, attr):
+    fig = px.bar(df, x=x, y=y, color=attr, title=title)
+    return fig
+
+
+def create_pie_plot(df, plot_val, names, title):
+    fig = px.pie(df,
+                 values=plot_val,
+                 names=names,
+                 title=title,
+                 hover_data=['name', 'deaths', 'recoveries'])
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    return fig
+
+
+##############################end###############################
+
 app = DjangoDash('dash_app')   # replaces dash.Dash
 app.layout = html.Div([
     html.Div(
@@ -65,18 +92,14 @@ app.layout = html.Div([
 ])
 
 
-def create_line_plot(df, x, column, attr, title):
-    fig = px.scatter(df, y=column, x=x, color=attr, title=title)
-    fig.update_traces(mode='lines+markers')
-    fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(type='linear')
-    return fig
+
 
 @app.callback(Output('country_data_line_plot', 'figure'),
               Output('global_data_line_plot', 'figure'),
               Input('stat_to_plot_choice', 'value'),
               Input('date_range_picker', 'start_date'),
-              Input('date_range_picker', 'end_date'))
+              Input('date_range_picker', 'end_date')
+    )
 def display_country_line_graph(column, start, end):
     time_query = True
     country_fig = {}
@@ -93,8 +116,7 @@ def display_country_line_graph(column, start, end):
             end = datetime.datetime.strptime(end, "%Y-%m-%d").date()
             time_query = country_dataset.time >= end
         data = country_dataset[time_query]
-        data2 = global_dataset[time_query]  
+        data2 = global_dataset[time_query]
         country_fig = create_line_plot(data, "time", column, "name", f"Time vs. {column.capitalize()} by Nation")
         global_fig = create_line_plot(data2, "time", column, "name", f"Time vs. {column.capitalize()} (Wordlwide)")
     return country_fig, global_fig
-
