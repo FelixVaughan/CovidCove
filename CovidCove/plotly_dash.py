@@ -12,24 +12,24 @@ from stats.models import *
 import plotly.express as px
 
 
-######################################################################################################
-#                                     Init/Server Wide Variables                                     #
-######################################################################################################
+############################################Init/Server Wide Variables############################################
 
 country_dataset = pd.DataFrame.from_records(Country.objects.all().values())
 country_dataset['deaths'] = country_dataset['deaths'].apply(lambda x : 0 if x < 0 else x) #should be removed when we do a fresh scrape as the issue has been fixed in the db
+country_dataset['pop'] = country_dataset['pop'].apply(lambda x : 1000000 if x < 0 else x) #should be removed when we do a fresh scrape as the issue has been fixed in the db
 global_dataset = pd.DataFrame.from_records(Global.objects.all().values())
 global_dataset['deaths'] = global_dataset['deaths'].apply(lambda x : 0 if x < 0 else x)
+global_dataset['pop'] = 1000000
 available_dates = country_dataset['time'].drop_duplicates().tolist() #note, fata is sorted by default
 
-######################################################################################################
-#                                    End Init/Server Wide Variables                                  #
-######################################################################################################
+##########################################End Init/Server Wide Variables##########################################
 
 
-#####################discrete graph creators####################
-def create_line_plot(df, x, column, attr, title):
-    fig = px.scatter(df, y=column, x=x, color=attr, title=title)
+
+#####################Graph Creators####################
+
+def create_line_plot(df, x, column, attr1, attr2, title):
+    fig = px.scatter(df, y=column, x=x, color=attr1, size=attr2, title=title, custom_data=[attr1])
     fig.update_traces(mode='lines+markers')
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(type='linear')
@@ -50,10 +50,10 @@ def create_pie_plot(df, plot_val, names, title):
     fig.update_traces(textposition='inside', textinfo='percent+label')
     return fig
 
+######################End Graph Creators######################
 
-##############################end###############################
 
-app = DjangoDash('dash_app')   # replaces dash.Dash
+app = DjangoDash('dash_app')
 app.layout = html.Div([
     html.Div(
         [
@@ -62,33 +62,33 @@ app.layout = html.Div([
                     dcc.DatePickerRange(
                         id="date_range_picker",
                         min_date_allowed=available_dates[0],
-                        max_date_allowed=available_dates[len(available_dates) - 1],
-                        initial_visible_month = available_dates[0],
-                        end_date=date.today()
-                    ),
-
-                    dcc.Dropdown(
-                        id='stat_to_plot_choice',
-                        options=[{'label': i, 'value': i} for i in country_dataset.columns],
-                        value=country_dataset.columns[0]
-                    ),
-
+                        max_date_allowed=available_dates[len(available_dates) -
+                                                         1],
+                        initial_visible_month=available_dates[0],
+                        end_date=date.today()),
+                    dcc.Dropdown(id='stat_to_plot_choice',
+                                 options=[{
+                                     'label': i,
+                                     'value': i
+                                 } for i in country_dataset.columns],
+                                 value=country_dataset.columns[0]),
                     dcc.Store(id="data_store"),
                 ],
                 id="data_picker_container",
             ),
-
-            html.Div(
-                [
-                    dcc.Graph(id="country_data_line_plot"),
-                    dcc.Graph(id="global_data_line_plot"),
-                ],
-                id="line_plots_container"
-            ),
+            html.Div([
+                dcc.Graph(id="country_data_line_plot"),
+                dcc.Graph(id="global_data_line_plot"),
+            ],
+                     id="line_plots_container"),
+            html.Div([
+                dcc.Graph(id="country_bar_chart"),
+                dcc.Graph(id="country_pie_chart"),
+            ],
+                     id="discrete_plots_container"),
         ],
         id="stat_component_div",
     )
-
 ])
 
 
@@ -117,6 +117,15 @@ def display_country_line_graph(column, start, end):
             time_query = country_dataset.time >= end
         data = country_dataset[time_query]
         data2 = global_dataset[time_query]
-        country_fig = create_line_plot(data, "time", column, "name", f"Time vs. {column.capitalize()} by Nation")
-        global_fig = create_line_plot(data2, "time", column, "name", f"Time vs. {column.capitalize()} (Wordlwide)")
+        country_fig = create_line_plot(data, "time", column, "name", "pop" ,f"Time vs. {column.capitalize()} by Nation")
+        global_fig = create_line_plot(data2, "time", column, "name", "pop" ,f"Time vs. {column.capitalize()} (Wordlwide)")
     return country_fig, global_fig
+
+@app.callback(
+    Output("country_bar_chart","figure"),
+    Output("country_pie_chart","figure"),
+    Input("country_data_line_plot","hoverData"),
+)
+def update_country_discrete_chart(data):
+    print(f"{data}")
+    return {}, {}
