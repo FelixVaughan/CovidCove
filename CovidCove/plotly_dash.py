@@ -8,6 +8,7 @@ import sys
 from datetime import date
 from datetime import datetime
 import pandas as pd
+import numpy as np
 from stats.models import *
 import plotly.express as px
 
@@ -28,8 +29,8 @@ available_dates = country_dataset['time'].drop_duplicates().tolist() #note, fata
 
 #####################Graph Creators####################
 
-def create_line_plot(df, x, column, attr1, attr2, title):
-    fig = px.scatter(df, y=column, x=x, color=attr1, size=attr2, title=title, custom_data=[attr1])
+def create_line_plot(df, x, column, attr, title):
+    fig = px.scatter(df, y=column, x=x, color=attr,  title=title, custom_data=[attr])
     fig.update_traces(mode='lines+markers')
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(type='linear')
@@ -84,6 +85,7 @@ app.layout = html.Div([
             html.Div([
                 dcc.Graph(id="country_bar_chart"),
                 dcc.Graph(id="country_pie_chart"),
+                dcc.Graph(id="global_choropleth_map"),
             ],
                      id="discrete_plots_container"),
         ],
@@ -117,15 +119,40 @@ def display_country_line_graph(column, start, end):
             time_query = country_dataset.time >= end
         data = country_dataset[time_query]
         data2 = global_dataset[time_query]
-        country_fig = create_line_plot(data, "time", column, "name", "pop" ,f"Time vs. {column.capitalize()} by Nation")
-        global_fig = create_line_plot(data2, "time", column, "name", "pop" ,f"Time vs. {column.capitalize()} (Wordlwide)")
+        country_fig = create_line_plot(data, "time", column, "name", f"Time vs. {column.capitalize()} by Nation")
+        global_fig = create_line_plot(data2, "time", column, "name" ,f"Time vs. {column.capitalize()} (Wordlwide)")
     return country_fig, global_fig
 
 @app.callback(
-    Output("country_bar_chart","figure"),
-    Output("country_pie_chart","figure"),
-    Input("country_data_line_plot","hoverData"),
+    Output("global_choropleth_map","figure"),
+    Input("global_data_line_plot","clickData"),
+    Input('stat_to_plot_choice', 'value'),
 )
-def update_country_discrete_chart(data):
-    print(f"{data}")
-    return {}, {}
+def update_world_map(data, value):
+    date =  data['points'][0]['x']
+    query = country_dataset.time_as_string == date
+    df = country_dataset[query]
+    df[value] = df[value].apply(lambda x: 1 if x < 1 else x)
+    df[value] = np.log10(df[value])
+    fig = px.choropleth(df, locations='iso', color=value, hover_data=['name','deaths']) #used to negate a 'divide by zero' error on countries with 0 cases, deaths, recoveries, etc...
+    return fig
+
+
+
+
+@app.callback(
+    Output("country_pie_chart", "figure"),
+    Output("country_bar_chart", "figure"),
+    Input("global_data_line_plot", "clickData"),
+    Input('stat_to_plot_choice', 'value'),
+)
+def update_global_pie_and_graph_chart(data, value):
+    pass
+    pie = bar = {}
+    date = data['points'][0]['x']
+    query = country_dataset.time_as_string == date
+    df = country_dataset[query]
+    pie = px.pie(df, values=value, names='name', title=f"{value} by Country")
+    pie.update_traces(textposition='inside')
+    bar = px.bar(df, x='name', y=value, color='name')
+    return pie, bar
