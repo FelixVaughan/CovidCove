@@ -13,7 +13,7 @@ import numpy as np
 from stats.models import *
 import plotly.express as px
 import plotly.graph_objects as go
-import time
+import math
 
 ############################################Init/Server Wide Variables############################################
 
@@ -188,14 +188,23 @@ def update_radar_chart(data):
     date = data['points'][0]['x']
     query = country_dataset.time_as_string == date
     df = country_dataset[query]
-    categories = ["total_deaths","total_active", "fatality_rate"]
+    categories = [
+        "total active/total recoveries", "total deaths/total recoveries", "total confirmed / total active", "population"
+    ]
     fig = go.Figure()
     for frame in df.itertuples():
-        fig.add_trace(go.Scatterpolar(
-            r=[frame.total_deaths, frame.total_active, frame.fatality_rate],
+        if ((frame.total_recoveries == 0 or frame.total_active == 0) or (frame.total_deaths == 0 or frame.fatality_rate == 0)): #oof
+            continue
+        y = abs(math.log(frame.total_active / frame.total_recoveries,10))
+        x = abs(math.log(frame.total_deaths / frame.total_recoveries, 10))
+        z = abs(math.log(frame.total_confirmed / frame.total_active, 10))
+        z0 = math.log(frame.pop, 10)/10
+        fig.add_trace(
+            go.Scatterpolar(r=[x, y, z, z0],
             theta=categories,
-            fill='toself',
-            name=frame.name
-        ))
-    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 5])))
+            name=frame.name,
+            fill="toself"),
+        )
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0.0, 3.0])), width=1500, height=1500)
     return fig
