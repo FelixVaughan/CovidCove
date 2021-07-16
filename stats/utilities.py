@@ -162,7 +162,7 @@ def populate_tables():
                     total_regions += 1
                     if province == "": #means these are country level stats, not provincial
                         continue
-                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, total_active=total_active, total_recoveries=total_recoveries, total_deaths=total_deaths, total_confirmed=total_confirmed, fatality_rate=f_rate, in_country=country, time=current_date, time_as_string=str(current_date)) 
+                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, total_active=total_active, total_recoveries=total_recoveries, total_deaths=total_deaths, total_confirmed=total_confirmed, fatality_rate=f_rate, in_country=country_name, time=current_date, time_as_string=str(current_date)) 
                 country.active = country_total_active_on_day
                 country.recoveries = country_total_recovered_on_day
                 country.deaths = country_total_deaths_on_day
