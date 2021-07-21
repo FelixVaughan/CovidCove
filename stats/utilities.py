@@ -1,13 +1,96 @@
 import os
 from requests.models import HTTPBasicAuth, HTTPError
-from .models import * 
-import sys 
+from .models import *
+import sys
 import requests
 import json
 import time
 from dotenv import load_dotenv
 import datetime
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+import math
+
 load_dotenv()
+
+
+
+def create_line_plot(df, x, column, attr, title, themes):
+    fig = px.scatter(df,
+                     y=column,
+                     x=x,
+                     color=attr,
+                     title=title,
+                     custom_data=[attr])
+    fig.update_traces(mode='lines+markers')
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(type='linear')
+    fig.update_layout(
+        font_color=themes["sundance_yellow"],
+        height=300,
+    )
+    fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
+    fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
+    return fig
+
+
+def create_bar_plot(df, x, y, title, themes):
+    fig = px.bar(df, x=x, y=y, color=x, title=title)
+    fig.update_layout(font_color=themes["sundance_yellow"])
+    fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
+    fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
+    return fig
+
+
+def create_pie_plot(df, value, names, title, themes):
+    fig = px.pie(df,
+                values=value,
+                names=names,
+                title=title,
+                hover_data=['name', 'deaths', 'recoveries']
+            )
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(font_color=themes["sundance_yellow"], height=600)
+    fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
+    fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
+    return fig
+
+def create_choro_plot(df, value, themes):
+    fig = px.choropleth(df, locations='iso', color=value, hover_data=['name','deaths']) #used to negate a 'divide by zero' error on countries with 0 cases, deaths, recoveries, etc...
+    fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
+    fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
+    fig.update_layout(font_color=themes["sundance_yellow"])
+    return fig
+
+def create_radar_plot(df, themes):
+    categories = [
+        "total active/total recoveries", "total deaths/total recoveries", "total confirmed / total active", "population"
+    ]
+    fig = go.Figure()
+    for frame in df.itertuples():
+        if ((frame.total_recoveries == 0 or frame.total_active == 0) or (frame.total_deaths == 0 or frame.fatality_rate == 0)): #oof
+            continue
+        y = abs(math.log(frame.total_active / frame.total_recoveries,10))
+        x = abs(math.log(frame.total_deaths / frame.total_recoveries, 10))
+        z = abs(math.log(frame.total_confirmed / frame.total_active, 10))
+        z0 = math.log(frame.pop, 10)/10
+        fig.add_trace(
+            go.Scatterpolar(r=[x, y, z, z0],
+            theta=categories,
+            name=frame.name,
+            fill="toself"),
+        )
+    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0.0, 3.0])), font_color=themes["sundance_yellow"], height=1000)
+    fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
+    fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
+    return fig
+
+def create_dataset(date, country):
+    prov = pd.DataFrame.from_records(Country.objects.get(name=country, time_as_string=date).region_set.all().values())
+    columns = [{"name": i, "id": i} for i in prov.columns]
+    data = prov.to_dict("records")
+    return columns, data
 
 
 
@@ -16,12 +99,12 @@ load_dotenv()
 #                            Last_time Model Helpers                          #
 ##############################################################################
 def get_last_time():
-        if(len(Last_update.objects.all()) < 1):
-            Last_update.objects.create()
-        last_date = Last_update.objects.get(pk=1)
-        return last_date.time
+    if(len(Last_update.objects.all()) < 1):
+        Last_update.objects.create()
+    last_date = Last_update.objects.get(pk=1)
+    return last_date.time
 
-def update_time(): 
+def update_time():
     if(len(Last_update.objects.all()) < 1):
         sys.stderr.write("'Last_update' table is empty")
         sys.exit(1)
@@ -80,8 +163,8 @@ def fetch_location_properties():
 #######################################################################################################
 def populate_tables():
     credentials = get_credentials()
-    #date = [int(digit) for digit in get_last_time().split("-")] #integer list compression of last updated date 
-    start = get_last_time() 
+    #date = [int(digit) for digit in get_last_time().split("-")] #integer list compression of last updated date
+    start = get_last_time()
     #start = datetime.date(date[0], date[1], date[2])
     end = datetime.date.today()
     if start == end:
@@ -102,11 +185,11 @@ def populate_tables():
             entry = Global()
             if(data):
                 entry.total_confirmed = data['confirmed']
-                entry.total_deaths = data['deaths'] 
+                entry.total_deaths = data['deaths']
                 entry.total_recoveries = data['recovered']
                 entry.total_active = data['active']
                 entry.confirmed = data['confirmed_diff']
-                entry.deaths = data['deaths_diff'] 
+                entry.deaths = data['deaths_diff']
                 entry.recoveries = data['recovered_diff']
                 entry.active = data['active_diff']
                 entry.fatality_rate = data['fatality_rate']
@@ -115,7 +198,7 @@ def populate_tables():
 
             else:
                 pass
-                #log could not get data for date       
+                #log could not get data for date
             entry.save()
 
         else:
@@ -129,12 +212,12 @@ def populate_tables():
             locations = json.load(open("cleaned_data.json","r"))
         for iso in locations:
             country_name = locations[iso]
-            try: 
+            try:
                 country_data_request = requests.get(credentials['countries_endpoint'], headers=headers, params={"date": current_date, "iso": iso})
             except requests.exceptions.ConnectionError:
                 time.sleep(15)
                 country_data_request = requests.get(credentials['countries_endpoint'], headers=headers, params={"date": current_date, "iso": iso})
-            country_total_deaths_on_day = country_total_recovered_on_day = country_total_active_on_day = country_total_confirmed_on_day  = country_total_fr = total_regions = 0 
+            country_total_deaths_on_day = country_total_recovered_on_day = country_total_active_on_day = country_total_confirmed_on_day  = country_total_fr = total_regions = 0
             country_deaths_overall = country_recovered_overall = country_active_overall = country_confirmed_overall = 0
             if country_data_request.status_code == 200:
                 country = Country.objects.create(iso=iso, name=country_name, time=current_date, time_as_string=str(current_date))
@@ -162,7 +245,7 @@ def populate_tables():
                     total_regions += 1
                     if province == "": #means these are country level stats, not provincial
                         continue
-                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, total_active=total_active, total_recoveries=total_recoveries, total_deaths=total_deaths, total_confirmed=total_confirmed, fatality_rate=f_rate, in_country=country_name, time=current_date, time_as_string=str(current_date)) 
+                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, total_active=total_active, total_recoveries=total_recoveries, total_deaths=total_deaths, total_confirmed=total_confirmed, fatality_rate=f_rate, in_country=country_name, time=current_date, time_as_string=str(current_date))
                 country.active = country_total_active_on_day
                 country.recoveries = country_total_recovered_on_day
                 country.deaths = country_total_deaths_on_day
@@ -180,7 +263,7 @@ def populate_tables():
             population_req = requests.get(f"{credentials['population_endpoint']}/{iso}")
             if(population_req.status_code == 200):
                 pop = int(population_req.json()["population"])
-                country.pop = pop 
+                country.pop = pop
             else:
                 sys.stderr.write(f"could not get population data for {country} on {current_date}")
             country.save()
@@ -194,23 +277,7 @@ def clear_tables():
     Region.objects.all().delete()
 
 #populate_tables()
-uin = input("clear tables (y/n)?")
-if uin.lower() == "y":
-    clear_tables()
-populate_tables()
-
-
-
-
-
-#jsonify model objects
-#add method that converts json to csv
-#add method that creates iso IDs for countries in chloropleth map. 
-#add function to get data by month
-#add function to get data by year
-
-#possible color schemes
-
-# #2596BE
-# HEX
-# #2596be
+# uin = input("clear tables (y/n)?")
+# if uin.lower() == "y":
+#     clear_tables()
+# populate_tables()
