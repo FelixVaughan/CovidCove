@@ -42,16 +42,25 @@ max_date = available_dates[len(available_dates) - 1] #usually the current day
 default_plot_value = "deaths"
 default_country = "Canada"
 excluded_option_values = ["id", "name", "time", "time_as_string", "iso", "regions", "pop"]
-default_country_time_dataset = country_dataset[(country_dataset.time >= min_date) & (country_dataset.time <= max_date)]
-default_global_time_dataset = global_dataset[(global_dataset.time >= min_date) & (global_dataset.time <= max_date)]
-default_country_line_plot = create_line_plot(default_country_time_dataset, "time", default_plot_value, "name", f"Time vs. {default_plot_value.capitalize()} by Nation", themes)
-default_global_line_plot = create_line_plot(default_global_time_dataset, "time", default_plot_value, "name", f"Time vs. {default_plot_value.capitalize()} (Wordlwide)", themes)
-default_pie_plot = create_pie_plot(default_country_time_dataset, default_plot_value, "name", f"{default_plot_value} by Country", themes)
-default_bar_plot = create_bar_plot(default_country_time_dataset, "name", default_plot_value, f"{default_plot_value}", themes)
-default_choro_plot = create_choro_plot(default_country_time_dataset, default_plot_value, themes)
-default_radar_plot = create_radar_plot(default_country_time_dataset, themes)
-default_data_set = create_dataset(max_date, default_country)
+# default_country_time_dataset = country_dataset[(country_dataset.time >= min_date) & (country_dataset.time <= max_date)]
+# default_global_time_dataset = global_dataset[(global_dataset.time >= min_date) & (global_dataset.time <= max_date)]
+# default_country_line_plot = create_line_plot(default_country_time_dataset, "time", default_plot_value, "name", f"Time vs. {default_plot_value.capitalize()} by Nation", themes)
+# default_global_line_plot = create_line_plot(default_global_time_dataset, "time", default_plot_value, "name", f"Time vs. {default_plot_value.capitalize()} (Wordlwide)", themes)
+# default_pie_plot = create_pie_plot(default_country_time_dataset, default_plot_value, "name", f"{default_plot_value} by Country", themes)
+# default_bar_plot = create_bar_plot(default_country_time_dataset, "name", default_plot_value, f"{default_plot_value}", themes)
+# default_choro_plot = create_choro_plot(default_country_time_dataset, default_plot_value, themes)
+# default_radar_plot = create_radar_plot(default_country_time_dataset, themes)
+# default_data_set = create_dataset(max_date, default_country)
 ##########################################End Init/Server Wide Variables##########################################
+
+
+def blank_fig():
+    fig = go.Figure(go.Scatter(x=[], y = []))
+    fig.update_layout(template = None)
+    fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
+    fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
+    fig.update_layout(font_color=themes["sundance_yellow"])
+    return fig
 
 
 app = DjangoDash(
@@ -60,92 +69,100 @@ app = DjangoDash(
     meta_tags=[{"name": "viewport", "content": "width=device-width initial-scale=1.0"}]
 )
 
-app.layout = dbc.Container([
-    dbc.Row([
-        dbc.Col(
-            dcc.DatePickerRange(
-                id="date_range_picker",
-                min_date_allowed=min_date,
-                max_date_allowed=max_date,
-                initial_visible_month=available_dates[0],
-                end_date=date.today()), ),
-        dbc.Col(
-            dcc.Dropdown(
-                id='stat_to_plot_choice',
-                options=[{'label': i,'value': i} for i in country_dataset.columns.difference(excluded_option_values)],
-                value=country_dataset.columns[0]),
+app.layout = dbc.Container(
+    [
+        dbc.Row([
+            dbc.Col(
+                dcc.DatePickerRange(id="date_range_picker",
+                                    min_date_allowed=min_date,
+                                    max_date_allowed=max_date,
+                                    initial_visible_month=available_dates[0],
+                                    end_date=date.today()), ),
+            dbc.Col(
+                dcc.Dropdown(id='stat_to_plot_choice',
+                             options=[{
+                                 'label': i,
+                                 'value': i
+                             } for i in country_dataset.columns.difference(
+                                 excluded_option_values)],
+                             value=country_dataset.columns[0]),
                 width=7,
-        ),
-        dcc.Store(id="data_store"),
-    ],
-            id="data_picker_container",
-            no_gutters=True,
-            align="center",
-            style={
-                'margin-right': '100px',
-                'margin-left': '100px'
-            }),
-    dbc.Row([
-        dbc.Col(
-            dcc.Graph(
-                id="global_data_line_plot",
-                figure=default_global_line_plot,
             ),
-            width=6,
-        ),
-        dbc.Col(
-            dcc.Graph(
-                id="country_data_line_plot", 
-                figure=default_country_line_plot,    
+            dbc.Col(
+                dcc.Dropdown(id='countries_to_plot',
+                    multi=True,
+                    options=[{
+                        'label': i,
+                        'value': i
+                    } for i in country_dataset.name],
+                    value=['Canada', 'Brazil'],
+                ),
             ),
-            width=6,
-        ),
-    ], ),
-    html.Div([
-        dcc.Graph(
-            id="country_bar_chart",
-            figure= default_bar_plot,
-        ),
-        dcc.Graph(
-            id="country_pie_chart",
-            figure=default_pie_plot,
-        ),
-        dcc.Graph(
-            id="global_choropleth_map",
-            figure=default_choro_plot,
-        ),
-        dcc.Graph(
-            id='radar_chart',
-            figure=default_radar_plot,
-        ),
-        dash_table.DataTable(
-            id="province_display",
-            columns=[{
-                "name": i,
-                "id": i
-            } for i in [""]],
-            style_header={
-                'backgroundColor': themes["deep_ocean_blue"],
-                'color': themes["sundance_yellow"],
-                'fontWeight': 'bold'
-            },
-            style_cell={
-                'backgroundColor': themes['deep_ocean_blue'],
-                'color': themes['banana_yellow'],
-            },
-            data=country_dataset.head().to_dict('records'),
-        ),
-    ],
-    id="discrete_plots_container"),
+            dcc.Store(id="data_store"),
+        ],
+                id="data_picker_container",
+                no_gutters=True,
+                align="center",
+                style={
+                    'margin-right': '100px',
+                    'margin-left': '100px'
+                }),
+        dbc.Row([
+            dbc.Col(
+                dcc.Graph(
+                    id="global_data_line_plot",
+                    figure=blank_fig(),
+                ),
+                width=6,
+            ),
+            dbc.Col(
+                dcc.Graph(
+                    id="country_data_line_plot",
+                    figure=blank_fig(),
+                ),
+                width=6,
+            ),
+        ], ),
+        html.Div([
+            dcc.Graph(
+                id="country_bar_chart",
+                figure=blank_fig(),
+            ),
+            dcc.Graph(
+                id="country_pie_chart",
+                figure=blank_fig(),
+            ),
+            dcc.Graph(
+                id="global_choropleth_map",
+                figure=blank_fig(),
+            ),
+            dcc.Graph(
+                id='radar_chart',
+                figure=blank_fig(),
+            ),
+            dash_table.DataTable(
+                id="province_display",
+                columns=[{
+                    "name": i,
+                    "id": i
+                } for i in [""]],
+                style_header={
+                    'backgroundColor': themes["deep_ocean_blue"],
+                    'color': themes["sundance_yellow"],
+                    'fontWeight': 'bold'
+                },
+                style_cell={
+                    'backgroundColor': themes['deep_ocean_blue'],
+                    'color': themes['banana_yellow'],
+                },
+                data=country_dataset.head().to_dict('records'),
+            ),
+        ],
+                 id="discrete_plots_container"),
     ],
     style={"backgroundColor": themes["abyss_blue"]},
     fluid=True,
 )
-
-
-
-
-
 
 
 
