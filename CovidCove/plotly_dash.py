@@ -62,6 +62,14 @@ def blank_fig():
     fig.update_layout(font_color=themes["sundance_yellow"])
     return fig
 
+def select_dataset(input_dataset):
+    dataset = {}
+    if input_dataset["df"]:
+        dataset = pd.read_json(input_dataset['df'])
+        print(input_dataset['df'])
+    else:
+        dataset = country_dataset
+    return dataset
 
 app = DjangoDash(
     'dash_app',
@@ -166,13 +174,16 @@ app.layout = dbc.Container(
 
 
 
-@app.callback(Output('country_data_line_plot', 'figure'),
-              Output('global_data_line_plot', 'figure'),
-              Input('stat_to_plot_choice', 'value'),
-              Input('date_range_picker', 'start_date'),
-              Input('date_range_picker', 'end_date')
-    )
-def display_line_graphs(column, start, end):
+@app.callback(
+    Output('country_data_line_plot', 'figure'),
+    Output('global_data_line_plot', 'figure'),
+    Input('stat_to_plot_choice', 'value'),
+    Input('date_range_picker', 'start_date'),
+    Input('date_range_picker', 'end_date'),
+    Input("data_store", "data"),
+)
+def display_line_graphs(column, start, end, countries=None):
+    dataset=select_dataset(countries)
     time_query = True
     country_fig = {}
     global_fig = {}
@@ -187,18 +198,19 @@ def display_line_graphs(column, start, end):
         elif end:
             end = datetime.datetime.strptime(end, "%Y-%m-%d").date()
             time_query = country_dataset.time >= end
-        data = country_dataset[time_query]
+        data = dataset[time_query]
         data2 = global_dataset[time_query]
         country_fig = create_line_plot(data, "time", column, "name", f"Time vs. {column.capitalize()} by Nation", themes)
         global_fig = create_line_plot(data2, "time", column, "name" ,f"Time vs. {column.capitalize()} (Wordlwide)", themes)
     return country_fig, global_fig
 
 @app.callback(
-    Output("global_choropleth_map","figure"),
-    Input("global_data_line_plot","clickData"),
+    Output("global_choropleth_map", "figure"),
+    Input("global_data_line_plot", "clickData"),
     Input('stat_to_plot_choice', 'value'),
+    Input("data_store", "data"),
 )
-def update_world_map(data, value):
+def update_world_map(data, value, countries=None):
     date =  data['points'][0]['x']
     query = country_dataset.time_as_string == date
     df = country_dataset[query]
@@ -212,13 +224,15 @@ def update_world_map(data, value):
     Output("country_pie_chart", "figure"),
     Output("country_bar_chart", "figure"),
     Input("global_data_line_plot", "clickData"),
-    Input('stat_to_plot_choice', 'value'),
+    Input("stat_to_plot_choice", "value"),
+    Input("data_store", "data"),
 )
-def update_global_pie_and_graph_chart(data, value):
+def update_global_pie_and_graph_chart(data, value, countries=None):
+    dataset = select_dataset(countries)
     pie = bar = {}
     date = data['points'][0]['x']
-    query = country_dataset.time_as_string == date
-    df = country_dataset[query]
+    query = dataset.time_as_string == date
+    df = dataset[query]
     title = f"{value} by Country"
     pie = create_pie_plot(df, value, 'name', title, themes)
     bar = create_bar_plot(df, 'name', value, title, themes)
@@ -228,8 +242,9 @@ def update_global_pie_and_graph_chart(data, value):
     Output("province_display", "columns"),
     Output("province_display", "data"),
     Input("country_data_line_plot", "clickData"),
+    Input("data_store", "data"),
 )
-def province_display(data):
+def province_display(data, countries=None):
     date = data['points'][0]['x']
     country = data['points'][0]['customdata'][0]
     return create_dataset(date, country)
@@ -237,10 +252,25 @@ def province_display(data):
 @app.callback(
     Output("radar_chart", "figure"),
     Input("global_data_line_plot", "clickData"),
+    Input("data_store", "data"),
 )
-def update_radar_chart(data):
+def update_radar_chart(data, countries=None):
+    dataset = select_dataset(countries)
     date = data['points'][0]['x']
-    query = country_dataset.time_as_string == date
-    df = country_dataset[query]
+    query = dataset.time_as_string == date
+    df = dataset[query]
     fig = create_radar_plot(df, themes)
     return fig
+
+
+@app.callback(
+    Output("data_store", "data"),
+    Input("countries_to_plot","value"),
+)
+def create_filtered_dataframe(countries):
+    data = {}
+    data['df'] = ""
+    if countries:
+        df = country_dataset[country_dataset.name.isin(countries)]
+        data["df"] = df.to_json()
+    return data
