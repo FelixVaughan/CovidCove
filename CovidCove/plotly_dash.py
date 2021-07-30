@@ -272,5 +272,5 @@ def create_filtered_dataframe(countries):
     data['df'] = ""
     if countries:
         df = country_dataset[country_dataset.name.isin(countries)]
-        data["df"] = df.to_json()
+        data["df"] = df.to_json(date_format='iso')
     return data

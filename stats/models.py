@@ -60,6 +60,6 @@ class Global(Location):  # Stores the global total
 # should only ever be one entry in this table. Stores the date the db was last refreshed
 class Last_update(models.Model):
     time = models.DateField(default=datetime.date(2019,12,31), max_length=10)
-
+    country = models.CharField(default="Palau", max_length=20)
     def __str__(self):
         return self.time

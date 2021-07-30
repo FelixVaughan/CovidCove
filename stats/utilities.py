@@ -1,3 +1,4 @@
+from functools import wraps
 import os
 from requests.models import HTTPBasicAuth, HTTPError
 from .models import *
@@ -102,16 +103,18 @@ def get_last_time():
     if(len(Last_update.objects.all()) < 1):
         Last_update.objects.create()
     last_date = Last_update.objects.get(pk=1)
-    return last_date.time
+    return last_date
 
-def update_time():
+def update_time(time, country):
     if(len(Last_update.objects.all()) < 1):
         sys.stderr.write("'Last_update' table is empty")
         sys.exit(1)
     last_date = Last_update.objects.get(pk=1)
     current_time = datetime.date.today()
-    last_date.time = current_time
+    last_date.time = time
+    last_date.country = country
     last_date.save()
+    print(f"State save complete. time is {last_date.time}. Country is {last_date.country}")
 
 def reset():
     if(len(Last_update.objects.all()) < 1):
@@ -163,121 +166,128 @@ def fetch_location_properties():
 #######################################################################################################
 def populate_tables():
     credentials = get_credentials()
-    #date = [int(digit) for digit in get_last_time().split("-")] #integer list compression of last updated date
-    start = get_last_time()
-    #start = datetime.date(date[0], date[1], date[2])
+    last_time = get_last_time()
+    start = last_time.time
+    last_country = last_time.country
+    country_set = False
+    if(last_country == "Palau"):
+        country_set = True
     end = datetime.date.today()
     if start == end:
         return
     day = datetime.timedelta(days=1)
-    current_date = datetime.date(2021, 3, 20) #STRICTLY FOR TESTING
+    current_date = start 
+    country_name = ""
     headers=credentials['headers']
-    while current_date <= end:
-        print(f"Retrieving for: {current_date}")
-        try:
-            global_data_request = requests.get(credentials['totals_endpoint'], headers=headers, params={"date": current_date})
-        except requests.exceptions.ConnectionError:
-            time.sleep(15)
-            global_data_request = requests.get(credentials['totals_endpoint'], headers=headers, params={"date": current_date})
-            #sometimes due to too many connections a timeout occurs. This remedies that.
-        if(global_data_request.status_code == 200):
-            data = global_data_request.json()['data']
-            entry = Global()
-            if(data):
-                entry.total_confirmed = data['confirmed']
-                entry.total_deaths = data['deaths']
-                entry.total_recoveries = data['recovered']
-                entry.total_active = data['active']
-                entry.confirmed = data['confirmed_diff']
-                entry.deaths = data['deaths_diff']
-                entry.recoveries = data['recovered_diff']
-                entry.active = data['active_diff']
-                entry.fatality_rate = data['fatality_rate']
-                entry.time = current_date
-                entry.time_as_string = str(current_date)
-
-            else:
-                pass
-                #log could not get data for date
-            entry.save()
-
-        else:
-            #log failure
-            pass
-
-        try:
-            locations = json.load(open("cleaned_data.json","r"))
-        except FileNotFoundError:
-            fetch_location_properties()
-            locations = json.load(open("cleaned_data.json","r"))
-        for iso in locations:
-            country_name = locations[iso]
+    try:
+        while current_date <= end:
             try:
-                country_data_request = requests.get(credentials['countries_endpoint'], headers=headers, params={"date": current_date, "iso": iso})
+                global_data_request = requests.get(credentials['totals_endpoint'], headers=headers, params={"date": current_date})
             except requests.exceptions.ConnectionError:
                 time.sleep(15)
-                country_data_request = requests.get(credentials['countries_endpoint'], headers=headers, params={"date": current_date, "iso": iso})
-            country_total_deaths_on_day = country_total_recovered_on_day = country_total_active_on_day = country_total_confirmed_on_day  = country_total_fr = total_regions = 0
-            country_deaths_overall = country_recovered_overall = country_active_overall = country_confirmed_overall = 0
-            if country_data_request.status_code == 200:
-                country = Country.objects.create(iso=iso, name=country_name, time=current_date, time_as_string=str(current_date))
-                areas = country_data_request.json()['data'] #note sometimes area IS the country in the case of only one entry
-                for area in areas:
-                    confirmed = area['confirmed_diff']
-                    deaths = area['deaths_diff']
-                    recoveries = area['recovered_diff']
-                    active = area['active_diff']
-                    total_confirmed = area['confirmed']
-                    total_deaths = area['deaths']
-                    total_recoveries = area['recovered']
-                    total_active = area['active']
-                    f_rate = area['fatality_rate']
-                    province = area['region']['province']
-                    country_total_deaths_on_day += deaths
-                    country_total_recovered_on_day += recoveries
-                    country_total_active_on_day += active
-                    country_total_confirmed_on_day += confirmed
-                    country_deaths_overall += total_deaths
-                    country_active_overall += total_active
-                    country_confirmed_overall += total_confirmed
-                    country_recovered_overall += total_recoveries
-                    country_total_fr += f_rate
-                    total_regions += 1
-                    if province == "": #means these are country level stats, not provincial
-                        continue
-                    reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, total_active=total_active, total_recoveries=total_recoveries, total_deaths=total_deaths, total_confirmed=total_confirmed, fatality_rate=f_rate, in_country=country_name, time=current_date, time_as_string=str(current_date))
-                country.active = country_total_active_on_day
-                country.recoveries = country_total_recovered_on_day
-                country.deaths = country_total_deaths_on_day
-                country.confirmed = country_total_confirmed_on_day
-                country.total_active = country_active_overall
-                country.total_deaths = country_deaths_overall
-                country.total_recoveries = country_recovered_overall
-                country.total_confirmed = country_confirmed_overall
-                country.regions = total_regions
-                if(total_regions):
-                    country.fatality_rate = (country_total_fr)/total_regions
+                global_data_request = requests.get(credentials['totals_endpoint'], headers=headers, params={"date": current_date})
+                #sometimes due to too many connections a timeout occurs. This remedies that.
+            if(global_data_request.status_code == 200):
+                data = global_data_request.json()['data']
+                entry = Global(time=current_date, time_as_string=str(current_date))
+                if(data):
+                    entry.total_confirmed = data['confirmed']
+                    entry.total_deaths = data['deaths']
+                    entry.total_recoveries = data['recovered']
+                    entry.total_active = data['active']
+                    entry.confirmed = data['confirmed_diff']
+                    entry.deaths = data['deaths_diff']
+                    entry.recoveries = data['recovered_diff']
+                    entry.active = data['active_diff']
+                    entry.fatality_rate = data['fatality_rate']
+                else:
+                    pass
+                    #log could not get data for date
+                entry.save()
             else:
-                #log could not get data for date
+                #log failure
                 pass
-            population_req = requests.get(f"{credentials['population_endpoint']}/{iso}")
-            if(population_req.status_code == 200):
-                pop = int(population_req.json()["population"])
-                country.pop = pop
-            else:
-                sys.stderr.write(f"could not get population data for {country} on {current_date}")
-            country.save()
-        current_date += day
-    now = datetime.date.today().strftime("%Y-%m-%d")
-    #update_time()
+            try:
+                locations = json.load(open("cleaned_data.json","r"))
+            except FileNotFoundError:
+                fetch_location_properties()
+                locations = json.load(open("cleaned_data.json","r"))
+            for iso in locations:
+                country_name = locations[iso]
+                if(country_set == False):
+                    if(country_name == last_country):
+                        country_set = True
+                    continue
+                try:
+                    country_data_request = requests.get(credentials['countries_endpoint'], headers=headers, params={"date": current_date, "iso": iso})
+                except requests.exceptions.ConnectionError:
+                    time.sleep(15)
+                    country_data_request = requests.get(credentials['countries_endpoint'], headers=headers, params={"date": current_date, "iso": iso})
+                country_total_deaths_on_day = country_total_recovered_on_day = country_total_active_on_day = country_total_confirmed_on_day  = country_total_fr = total_regions = 0
+                country_deaths_overall = country_recovered_overall = country_active_overall = country_confirmed_overall = 0
+                if country_data_request.status_code == 200:
+                    country = Country.objects.create(iso=iso, name=country_name, time=current_date, time_as_string=str(current_date))
+                    areas = country_data_request.json()['data'] #note sometimes area IS the country in the case of only one entry
+                    for area in areas:
+                        confirmed = area['confirmed_diff']
+                        deaths = area['deaths_diff']
+                        recoveries = area['recovered_diff']
+                        active = area['active_diff']
+                        total_confirmed = area['confirmed']
+                        total_deaths = area['deaths']
+                        total_recoveries = area['recovered']
+                        total_active = area['active']
+                        f_rate = area['fatality_rate']
+                        province = area['region']['province']
+                        country_total_deaths_on_day += deaths
+                        country_total_recovered_on_day += recoveries
+                        country_total_active_on_day += active
+                        country_total_confirmed_on_day += confirmed
+                        country_deaths_overall += total_deaths
+                        country_active_overall += total_active
+                        country_confirmed_overall += total_confirmed
+                        country_recovered_overall += total_recoveries
+                        country_total_fr += f_rate
+                        total_regions += 1
+                        if province == "": #means these are country level stats, not provincial
+                            continue
+                        reg = Region.objects.create(name=province, active=active, recoveries=recoveries, deaths=deaths, confirmed=confirmed, total_active=total_active, total_recoveries=total_recoveries, total_deaths=total_deaths, total_confirmed=total_confirmed, fatality_rate=f_rate, in_country=country, time=current_date, time_as_string=str(current_date))
+                    country.active = country_total_active_on_day
+                    country.recoveries = country_total_recovered_on_day
+                    country.deaths = country_total_deaths_on_day
+                    country.confirmed = country_total_confirmed_on_day
+                    country.total_active = country_active_overall
+                    country.total_deaths = country_deaths_overall
+                    country.total_recoveries = country_recovered_overall
+                    country.total_confirmed = country_confirmed_overall
+                    country.regions = total_regions
+                    if(total_regions):
+                        country.fatality_rate = (country_total_fr)/total_regions
+                else:
+                    #log could not get data for date
+                    pass
+                population_req = requests.get(f"{credentials['population_endpoint']}/{iso}")
+                if(population_req.status_code == 200):
+                    pop = int(population_req.json()["population"])
+                    country.pop = pop
+                else:
+                    sys.stderr.write(f"could not get population data for {country} on {current_date}")
+                country.save()
+            current_date += day
+        now = datetime.date.today().strftime("%Y-%m-%d")
+    except Exception as e:
+        sys.stderr.write(f"Unexpected error:\n{e}\nSaving state...")
+        sys.stdout.write(f"Unexpected error:\n{e}\nSaving state...")
+    finally:
+        update_time(current_date,country_name)
+
 
 def clear_tables():
     Global.objects.all().delete()
     Country.objects.all().delete()
     Region.objects.all().delete()
 
-#populate_tables()
-# uin = input("clear tables (y/n)?")
-# if uin.lower() == "y":
-#     clear_tables()
-# populate_tables()
+uin = input("clear tables (y/n)?")
+if uin.lower() == "y":
+    clear_tables()
+populate_tables()
