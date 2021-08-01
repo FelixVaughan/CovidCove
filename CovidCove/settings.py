@@ -56,7 +56,8 @@ MIDDLEWARE = [
     'django_plotly_dash.middleware.BaseMiddleware',
     'django_plotly_dash.middleware.ExternalRedirectionMiddleware' #might cause some issues if not actually used
 ]
-
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+print(f"fuck {STATICFILES_DIRS}")
 PLOTLY_COMPONENTS = [
     'dash_core_components',
     'dash_html_components',
@@ -138,8 +139,7 @@ DATETIME_FORMAT = '%Y-%m-%d'
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-print(f"static root is {STATIC_ROOT}")
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
