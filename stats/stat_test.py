@@ -11,6 +11,5 @@ import dash_html_components as html
 geo_data = json.load(open("custom.geo.json","r"))
 app = dash.Dash(__name__, external_stylesheets='https://codepen.io/chriddyp/pen/bWLwgP.css')
 cdf = pd.DataFrame(list(Country.objects.all().values())) #country dataframe
-fucker = cdf.to_csv("country.csv")
 
 #from stats import stat_test

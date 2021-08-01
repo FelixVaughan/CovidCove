@@ -46,13 +46,13 @@ def create_bar_plot(df, x, y, title, themes):
 
 def create_pie_plot(df, value, names, title, themes):
     fig = px.pie(df,
-                values=value,
-                names=names,
-                title=title,
-                hover_data=['name', 'deaths', 'recoveries']
-            )
+        values=value,
+        names=names,
+        title=title,
+        hover_data=['name', 'deaths', 'recoveries']
+    )
     fig.update_traces(textposition='inside', textinfo='percent+label')
-    fig.update_layout(font_color=themes["sundance_yellow"], height=600)
+    fig.update_layout(font_color=themes["sundance_yellow"], height=650, width=871)
     fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
     fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
     return fig
@@ -61,7 +61,7 @@ def create_choro_plot(df, value, themes):
     fig = px.choropleth(df, locations='iso', color=value, hover_data=['name','deaths']) #used to negate a 'divide by zero' error on countries with 0 cases, deaths, recoveries, etc...
     fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
     fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
-    fig.update_layout(font_color=themes["sundance_yellow"])
+    fig.update_layout(font_color=themes["sundance_yellow"], template = "plotly_dark", height=600)
     return fig
 
 def create_radar_plot(df, themes):
@@ -82,7 +82,12 @@ def create_radar_plot(df, themes):
             name=frame.name,
             fill="toself"),
         )
-    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0.0, 3.0])), font_color=themes["sundance_yellow"], height=1000)
+    fig.update_layout(
+        template="plotly_dark",
+        polar=dict(radialaxis=dict(visible=True, range=[0.0, 3.0])),
+        font_color=themes["sundance_yellow"],
+        height=650,
+        width=871)
     fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
     fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
     return fig
@@ -122,6 +127,7 @@ def reset():
         sys.exit(1)
     last_date = Last_update.objects.get(pk=1)
     last_date.time = datetime.date(2019,12,31)
+    last_date.country = "Palau"
     last_date.save()
 
 
@@ -176,11 +182,12 @@ def populate_tables():
     if start == end:
         return
     day = datetime.timedelta(days=1)
-    current_date = start 
+    current_date = datetime.date(2021, 1, 1) #start
     country_name = ""
     headers=credentials['headers']
     try:
         while current_date <= end:
+            print(f"collecting data for {current_date}")
             try:
                 global_data_request = requests.get(credentials['totals_endpoint'], headers=headers, params={"date": current_date})
             except requests.exceptions.ConnectionError:
@@ -215,6 +222,7 @@ def populate_tables():
             for iso in locations:
                 country_name = locations[iso]
                 if(country_set == False):
+                    print(f"skipping {country_name}")
                     if(country_name == last_country):
                         country_set = True
                     continue
@@ -287,7 +295,12 @@ def clear_tables():
     Country.objects.all().delete()
     Region.objects.all().delete()
 
-uin = input("clear tables (y/n)?")
-if uin.lower() == "y":
-    clear_tables()
-populate_tables()
+def populator():
+    uin = input("clear tables (y/n)? ")
+    reset_r = input("reset update records (y/n)? ")
+    if uin.lower() == "y":
+        clear_tables()
+    if reset_r.lower() == "y":
+        reset()
+    populate_tables()
+# populator()

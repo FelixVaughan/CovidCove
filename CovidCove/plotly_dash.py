@@ -1,4 +1,3 @@
-import dash
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
@@ -7,7 +6,6 @@ from dash_html_components.Div import Div
 from django.db.models.expressions import Col
 from django_plotly_dash import DjangoDash
 from dash.dependencies import Input, Output
-import sys
 from datetime import date
 from datetime import datetime
 import pandas as pd
@@ -16,8 +14,6 @@ from stats.models import *
 from stats.utilities import *
 import plotly.express as px
 import plotly.graph_objects as go
-import math
-
 ############################################Init/Server Wide Variables############################################
 themes = {
     "abyss_blue": "#0c1c34",
@@ -66,7 +62,6 @@ def select_dataset(input_dataset):
     dataset = {}
     if input_dataset["df"]:
         dataset = pd.read_json(input_dataset['df'])
-        print(input_dataset['df'])
     else:
         dataset = country_dataset
     return dataset
@@ -81,23 +76,31 @@ app.layout = dbc.Container(
     [
         dbc.Row([
             dbc.Col(
-                dcc.DatePickerRange(id="date_range_picker",
-                                    min_date_allowed=min_date,
-                                    max_date_allowed=max_date,
-                                    initial_visible_month=available_dates[0],
-                                    end_date=date.today()), ),
-            dbc.Col(
-                dcc.Dropdown(id='stat_to_plot_choice',
-                             options=[{
-                                 'label': i,
-                                 'value': i
-                             } for i in country_dataset.columns.difference(
-                                 excluded_option_values)],
-                             value=country_dataset.columns[0]),
-                width=7,
+                [
+                    dcc.DatePickerRange(
+                        id="date_range_picker",
+                        min_date_allowed=min_date,
+                        max_date_allowed=max_date,
+                        initial_visible_month=available_dates[0],
+                        end_date=date.today()),
+                ],
+                width=3,
             ),
             dbc.Col(
-                dcc.Dropdown(id='countries_to_plot',
+                [
+                    dcc.Dropdown(id='stat_to_plot_choice',
+                                 options=[{
+                                     'label': i,
+                                     'value': i
+                                 } for i in country_dataset.columns.difference(
+                                     excluded_option_values)],
+                                 value=country_dataset.columns[0]),
+                ],
+                width=3,
+            ),
+            dbc.Col([
+                dcc.Dropdown(
+                    id='countries_to_plot',
                     multi=True,
                     options=[{
                         'label': i,
@@ -105,47 +108,68 @@ app.layout = dbc.Container(
                     } for i in country_dataset.name],
                     value=['Canada', 'Brazil'],
                 ),
-            ),
-            dcc.Store(id="data_store"),
+            ],
+                    width=6),
         ],
-                id="data_picker_container",
-                no_gutters=True,
                 align="center",
                 style={
-                    'margin-right': '100px',
-                    'margin-left': '100px'
+                    "padding-top": "10px",
+                    "padding-bottom": "10px"
                 }),
-        dbc.Row([
-            dbc.Col(
-                dcc.Graph(
-                    id="global_data_line_plot",
-                    figure=blank_fig(),
+        dbc.Row(
+            [
+                dbc.Col(
+                    dcc.Graph(
+                        id="global_data_line_plot",
+                        figure=blank_fig(),
+                    ),
+                    className="col-lg-6",
                 ),
-                width=6,
-            ),
-            dbc.Col(
-                dcc.Graph(
-                    id="country_data_line_plot",
-                    figure=blank_fig(),
+                dbc.Col(
+                    dcc.Graph(
+                        id="country_data_line_plot",
+                        figure=blank_fig(),
+                    ),
+                    className="col-lg-6",
                 ),
+            ],
+            id="line_plot_container",
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Graph(
+                            id="country_pie_chart",
+                            figure=blank_fig(),
+                        ),
+                    ],
+                    width=6,
+                ),
+                dbc.Col(
+                    [
+                        dcc.Graph(
+                            id='radar_chart',
+                            figure=blank_fig(),
+                        ),
+                ],
                 width=6,
-            ),
-        ], ),
+                ),
+                dbc.Col(
+                    [
+                        dcc.Graph(
+                            id="global_choropleth_map",
+                            figure=blank_fig(),
+                        ),
+                    ], 
+                ),
+        ], className="row align-items-center"
+        ),
+        
+        dcc.Store(id="data_store"),
         html.Div([
             dcc.Graph(
                 id="country_bar_chart",
-                figure=blank_fig(),
-            ),
-            dcc.Graph(
-                id="country_pie_chart",
-                figure=blank_fig(),
-            ),
-            dcc.Graph(
-                id="global_choropleth_map",
-                figure=blank_fig(),
-            ),
-            dcc.Graph(
-                id='radar_chart',
                 figure=blank_fig(),
             ),
             dash_table.DataTable(
