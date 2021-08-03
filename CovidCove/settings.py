@@ -15,7 +15,6 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-print(f"Base dir is {BASE_DIR}")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -57,7 +56,6 @@ MIDDLEWARE = [
     'django_plotly_dash.middleware.ExternalRedirectionMiddleware' #might cause some issues if not actually used
 ]
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-print(f"fuck {STATICFILES_DIRS}")
 PLOTLY_COMPONENTS = [
     'dash_core_components',
     'dash_html_components',
