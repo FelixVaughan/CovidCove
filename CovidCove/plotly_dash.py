@@ -74,67 +74,91 @@ app = DjangoDash(
 
 app.layout = dbc.Container(
     [
-        dbc.Row([
-            dbc.Col(
-                [
-                    dcc.DatePickerRange(
-                        id="date_range_picker",
-                        min_date_allowed=min_date,
-                        max_date_allowed=max_date,
-                        initial_visible_month=available_dates[0],
-                        end_date=date.today()),
-                ],
-                width=3,
-            ),
-            dbc.Col(
-                [
-                    dcc.Dropdown(id='stat_to_plot_choice',
-                                 options=[{
-                                     'label': i,
-                                     'value': i
-                                 } for i in country_dataset.columns.difference(
-                                     excluded_option_values)],
-                                 value=country_dataset.columns[0]),
-                ],
-                width=3,
-            ),
-            dbc.Col([
-                dcc.Dropdown(
-                    id='countries_to_plot',
-                    multi=True,
-                    options=[{
-                        'label': i,
-                        'value': i
-                    } for i in country_dataset.name],
-                    value=['Canada', 'Brazil'],
-                ),
-            ],
-                    width=6),
-        ],
-                align="center",
-                style={
-                    "padding-top": "10px",
-                    "padding-bottom": "10px"
-                }),
         dbc.Row(
             [
                 dbc.Col(
-                    dcc.Graph(
-                        id="global_data_line_plot",
-                        figure=blank_fig(),
-                    ),
-                    className="col-lg-6",
+                    [
+                        dcc.DatePickerRange(
+                            id="date_range_picker",
+                            min_date_allowed=min_date,
+                            max_date_allowed=max_date,
+                            initial_visible_month=available_dates[0],
+                            end_date=date.today()
+                        ),
+                    ],
+                    width=3,
                 ),
+
                 dbc.Col(
-                    dcc.Graph(
-                        id="country_data_line_plot",
-                        figure=blank_fig(),
-                    ),
-                    className="col-lg-6",
+                    [
+                        dcc.Dropdown(id='stat_to_plot_choice',
+                            options=[{
+                                'label': i,
+                                'value': i
+                            } for i in country_dataset.columns.difference(
+                                excluded_option_values)],
+                            value=country_dataset.columns[0]
+                        ),
+                    ],
+                    width=3,
+                ),
+
+                dbc.Col(
+                    [
+                        dcc.Dropdown(
+                            id='countries_to_plot',
+                            multi=True,
+                            options=[{
+                                'label': i,
+                                'value': i
+                            } for i in country_dataset.name],
+                            value=['Canada', 'Brazil'],
+                        ),
+                    ],
+                    width=6
                 ),
             ],
+            align="center",
+            style={
+                "padding-top": "10px",
+                "padding-bottom": "10px"
+            }
+        ),
+        
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Graph(
+                            id="global_data_line_plot",
+                            figure=blank_fig(),
+                            style={"padding-bottom": "1em"}
+                        ),
+
+                        dcc.Graph(
+                            id="country_data_line_plot",
+                            figure=blank_fig(),
+                        ),
+                    ],
+                    className="col-md-6",
+                ),
+
+                dbc.Col(
+                    [
+                        dcc.Graph(
+                            id="global_choropleth_map",
+                            figure=blank_fig(),
+                            style={"height":"99%"},
+                        ),
+                    ],
+                    className="col-md-6",
+                ),
+            ],
+            className="justify-content-start",
+            style={"padding-bottom": "2em"},
             id="line_plot_container",
         ),
+
         dbc.Row(
             [
                 dbc.Col(
@@ -152,45 +176,54 @@ app.layout = dbc.Container(
                             id='radar_chart',
                             figure=blank_fig(),
                         ),
-                ],
-                width=6,
+                    ],
+                    width=6,
                 ),
+            ],
+            className="row align-items-center",
+            style={"padding-top": "0.5em", "padding-bottom": "1em"}
+        ),
+        dcc.Store(id="data_store"),
+
+
+        dbc.Row(
+            [
                 dbc.Col(
                     [
                         dcc.Graph(
-                            id="global_choropleth_map",
+                            id="country_bar_chart",
                             figure=blank_fig(),
                         ),
-                    ], 
+                    ],
                 ),
-        ], className="row align-items-center"
+            ],
         ),
-        
-        dcc.Store(id="data_store"),
-        html.Div([
-            dcc.Graph(
-                id="country_bar_chart",
-                figure=blank_fig(),
-            ),
-            dash_table.DataTable(
-                id="province_display",
-                columns=[{
-                    "name": i,
-                    "id": i
-                } for i in [""]],
-                style_header={
-                    'backgroundColor': themes["deep_ocean_blue"],
-                    'color': themes["sundance_yellow"],
-                    'fontWeight': 'bold'
-                },
-                style_cell={
-                    'backgroundColor': themes['deep_ocean_blue'],
-                    'color': themes['banana_yellow'],
-                },
-                data=country_dataset.head().to_dict('records'),
-            ),
-        ],
-                 id="discrete_plots_container"),
+
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dash_table.DataTable(
+                            id="province_display",
+                            columns=[{
+                                "name": i,
+                                "id": i
+                            } for i in [""]],
+                            style_header={
+                                'backgroundColor': themes["deep_ocean_blue"],
+                                'color': themes["sundance_yellow"],
+                                'fontWeight': 'bold'
+                            },
+                            style_cell={
+                                'backgroundColor': themes['deep_ocean_blue'],
+                                'color': themes['banana_yellow'],
+                            },
+                            data=country_dataset.head().to_dict('records'),
+                        ),
+                    ],
+                ),
+            ],
+        ),     
     ],
     style={"backgroundColor": themes["abyss_blue"]},
     fluid=True,

@@ -52,7 +52,7 @@ def create_pie_plot(df, value, names, title, themes):
         hover_data=['name', 'deaths', 'recoveries']
     )
     fig.update_traces(textposition='inside', textinfo='percent+label')
-    fig.update_layout(font_color=themes["sundance_yellow"], height=650, width=871)
+    fig.update_layout(font_color=themes["sundance_yellow"], height=650, width=880)
     fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
     fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
     return fig
