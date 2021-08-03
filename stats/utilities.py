@@ -66,7 +66,7 @@ def create_choro_plot(df, value, themes):
 
 def create_radar_plot(df, themes):
     categories = [
-        "total active/total recoveries", "total deaths/total recoveries", "total confirmed / total active", "population"
+        "Total Active/Total Recoveries", "Total deaths/Total Recoveries", "Total Confirmed / Total Active", "Population"
     ]
     fig = go.Figure()
     for frame in df.itertuples():

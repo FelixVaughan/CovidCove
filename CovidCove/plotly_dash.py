@@ -258,7 +258,7 @@ def display_line_graphs(column, start, end, countries=None):
         data = dataset[time_query]
         data2 = global_dataset[time_query]
         country_fig = create_line_plot(data, "time", column, "name", f"Time vs. {column.capitalize()} by Nation", themes)
-        global_fig = create_line_plot(data2, "time", column, "name" ,f"Time vs. {column.capitalize()} (Wordlwide)", themes)
+        global_fig = create_line_plot(data2, "time", column, "name" ,f"Time vs. {column.capitalize()} (Worldwide)", themes)
     return country_fig, global_fig
 
 @app.callback(
@@ -290,7 +290,7 @@ def update_global_pie_and_graph_chart(data, value, countries=None):
     date = data['points'][0]['x']
     query = dataset.time_as_string == date
     df = dataset[query]
-    title = f"{value} by Country"
+    title = f"{value.capitalize()} by Country"
     pie = create_pie_plot(df, value, 'name', title, themes)
     bar = create_bar_plot(df, 'name', value, title, themes)
     return pie, bar
