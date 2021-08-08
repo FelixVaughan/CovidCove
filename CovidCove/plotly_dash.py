@@ -124,7 +124,7 @@ app.layout = dbc.Container(
                 "padding-bottom": "10px"
             }
         ),
-        
+
         dbc.Row(
             [
                 dbc.Col(
@@ -216,14 +216,14 @@ app.layout = dbc.Container(
                             },
                             style_cell={
                                 'backgroundColor': themes['deep_ocean_blue'],
-                                'color': themes['banana_yellow'],
+                                'color': themes['angel_white'],
                             },
                             data=country_dataset.head().to_dict('records'),
                         ),
                     ],
                 ),
             ],
-        ),     
+        ),
     ],
     style={"backgroundColor": themes["abyss_blue"]},
     fluid=True,
@@ -331,3 +331,6 @@ def create_filtered_dataframe(countries):
         df = country_dataset[country_dataset.name.isin(countries)]
         data["df"] = df.to_json(date_format='iso')
     return data
+
+#todo: make respnsive with more bootstrap (couldalso fix the autorescaling thats happening)
+#todo: log the results of the choropleth and make sure it's not zoomable

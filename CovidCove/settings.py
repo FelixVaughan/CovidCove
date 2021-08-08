@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -56,6 +58,7 @@ MIDDLEWARE = [
     'django_plotly_dash.middleware.ExternalRedirectionMiddleware' #might cause some issues if not actually used
 ]
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
 PLOTLY_COMPONENTS = [
     'dash_core_components',
     'dash_html_components',
@@ -91,10 +94,14 @@ WSGI_APPLICATION = 'CovidCove.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        #'NAME': BASE_DIR / 'test.sqlite3',
-        #'NAME': BASE_DIR / "mega.sqlite3",
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'USER': os.getenv("DB_USER"),
+        'NAME': os.getenv("DB_USER"),
+        'PASSWORD': os.getenv("DB_PASS"),
+        'HOST': 'chunee.db.elephantsql.com',
+        'PORT': '5432',
     }
 }
 
