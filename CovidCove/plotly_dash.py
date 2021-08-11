@@ -38,15 +38,8 @@ max_date = available_dates[len(available_dates) - 1] #usually the current day
 default_plot_value = "deaths"
 default_country = "Canada"
 excluded_option_values = ["id", "name", "time", "time_as_string", "iso", "regions", "pop"]
-# default_country_time_dataset = country_dataset[(country_dataset.time >= min_date) & (country_dataset.time <= max_date)]
-# default_global_time_dataset = global_dataset[(global_dataset.time >= min_date) & (global_dataset.time <= max_date)]
-# default_country_line_plot = create_line_plot(default_country_time_dataset, "time", default_plot_value, "name", f"Time vs. {default_plot_value.capitalize()} by Nation", themes)
-# default_global_line_plot = create_line_plot(default_global_time_dataset, "time", default_plot_value, "name", f"Time vs. {default_plot_value.capitalize()} (Wordlwide)", themes)
-# default_pie_plot = create_pie_plot(default_country_time_dataset, default_plot_value, "name", f"{default_plot_value} by Country", themes)
-# default_bar_plot = create_bar_plot(default_country_time_dataset, "name", default_plot_value, f"{default_plot_value}", themes)
-# default_choro_plot = create_choro_plot(default_country_time_dataset, default_plot_value, themes)
-# default_radar_plot = create_radar_plot(default_country_time_dataset, themes)
-# default_data_set = create_dataset(max_date, default_country)
+dropdown_options =  country_dataset.columns.difference(excluded_option_values)
+dropdown_options = [option.replace ("_"," ") for option in dropdown_options]
 ##########################################End Init/Server Wide Variables##########################################
 
 
@@ -95,8 +88,7 @@ app.layout = dbc.Container(
                             options=[{
                                 'label': i,
                                 'value': i
-                            } for i in country_dataset.columns.difference(
-                                excluded_option_values)],
+                            } for i in dropdown_options],
                             value=country_dataset.columns[0]
                         ),
                     ],
@@ -272,7 +264,8 @@ def update_world_map(data, value, countries=None):
     query = country_dataset.time_as_string == date
     df = country_dataset[query]
     df[value] = df[value].apply(lambda x: 1 if x < 1 else x)
-    df[value] = np.log10(df[value])
+    df[value] = df[value].apply(lambda x : math.log10(x))
+    print(f"we took the log of a column:\n{df[value]}")
     fig = create_choro_plot(df, value, themes)
     return fig
 

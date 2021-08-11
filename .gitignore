@@ -1,5 +1,5 @@
-venv
 appAdminData
+venv
 .env
 .env.save
 env/
