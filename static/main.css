@@ -22,16 +22,19 @@ footer a, cite {
     text-decoration-line: none;
     font-weight: 300;
     margin-block: 3px;
-    color: #fdc30a
+    color: #fce036;
+    
 }
 
 footer a:hover, cite:hover{
-    color: #fce036;
+    color: #fdc30a;
+    font-size: 1.1em;
 }
 
 cite {
     display: block;
     font-size: 0.8em;
+    color: rgb(245, 5, 79)
 }
 
 /* width */

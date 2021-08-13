@@ -1,0 +1,7 @@
+FROM python:3.9
+RUN python3 -m pip install --upgrade pip
+WORKDIR /App
+COPY ./ . 
+RUN cp  -r ./static /
+RUN python3 -m pip install -r requirements.txt
+CMD ["sh", "start-script.sh"]

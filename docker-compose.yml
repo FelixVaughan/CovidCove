@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  webapp:
+    build:
+      context: .
+      dockerfile: gunicorn-dockerfile
+    ports:
+      - "8000:8000"
+    volumes: 
+      - static:/static
+  
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx-dockerfile
+    ports: 
+      - "80:80"
+
+volumes:
+  static:

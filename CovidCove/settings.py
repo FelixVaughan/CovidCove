@@ -23,12 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-8^^h(mr6hbm%%ai1t$64gkhitba$6^2hdjfewh+kl@)9#6o&ue'
+SECRET_KEY = os.getenv("secret_key") #'django-insecure-8^^h(mr6hbm%%ai1t$64gkhitba$6^2hdjfewh+kl@)9#6o&ue'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['gunicorn']
 
 
 # Application definition
@@ -96,14 +96,14 @@ WSGI_APPLICATION = 'CovidCove.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        # 'ENGINE': 'django.db.backends.postgresql',
-        # 'USER': os.getenv("DB_USER"),
-        # 'NAME': os.getenv("DB_USER"),
-        # 'PASSWORD': os.getenv("DB_PASS"),
-        # 'HOST': 'chunee.db.elephantsql.com',
-        # 'PORT': '5432',
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'USER': os.getenv("DB_USER"),
+        'NAME': os.getenv("DB_USER"),
+        'PASSWORD': os.getenv("DB_PASS"),
+        'HOST': 'chunee.db.elephantsql.com',
+        'PORT': '5432',
     }
 }
 
