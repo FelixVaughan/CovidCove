@@ -12,9 +12,11 @@ import pandas as pd
 import numpy as np
 from stats.models import *
 from stats.utilities import *
+from stats.threads import *
 import plotly.express as px
 import plotly.graph_objects as go
 ############################################Init/Server Wide Variables############################################
+
 themes = {
     "abyss_blue": "#0c1c34",
     "dark_blue": "#00005a",
@@ -27,8 +29,8 @@ themes = {
     #note: not actual color names (as far as I know)
 }
 country_dataset = pd.DataFrame.from_records(Country.objects.all().values())
-country_dataset['deaths'] = country_dataset['deaths'].apply(lambda x : 0 if x < 0 else x) #should be removed when we do a fresh scrape as the issue has been fixed in the db
-country_dataset['pop'] = country_dataset['pop'].apply(lambda x : 1000000 if x < 0 else x) #should be removed when we do a fresh scrape as the issue has been fixed in the db
+# country_dataset['deaths'] = country_dataset['deaths'].apply(lambda x : 0 if x < 0 else x) #should be removed when we do a fresh scrape as the issue has been fixed in the db
+# country_dataset['pop'] = country_dataset['pop'].apply(lambda x : 1000000 if x < 0 else x) #should be removed when we do a fresh scrape as the issue has been fixed in the db
 global_dataset = pd.DataFrame.from_records(Global.objects.all().values())
 global_dataset['deaths'] = global_dataset['deaths'].apply(lambda x : 0 if x < 0 else x)
 global_dataset['pop'] = 1000000
@@ -265,7 +267,6 @@ def update_world_map(data, value, countries=None):
     df = country_dataset[query]
     df[value] = df[value].apply(lambda x: 1 if x < 1 else x)
     df[value] = df[value].apply(lambda x : math.log10(x))
-    print(f"we took the log of a column:\n{df[value]}")
     fig = create_choro_plot(df, value, themes)
     return fig
 

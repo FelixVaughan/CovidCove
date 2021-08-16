@@ -18,7 +18,7 @@ class DailyRecords(models.Model):
 
 
 class Location(models.Model):
-    name = models.CharField(max_length=20, blank=False, editable=False)
+    name = models.CharField(max_length=20, default="Worldwide" ,blank=False, editable=False)
     active = models.IntegerField(default=0)
     recoveries = models.IntegerField(default=0)
     deaths = models.IntegerField(default=0)

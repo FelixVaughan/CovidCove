@@ -12,18 +12,21 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import math
-
+from .  credentials import get_credentials
+credentials = get_credentials()
 load_dotenv()
 
 
 
 def create_line_plot(df, x, column, attr, title, themes):
+    print(f"\n\n\nTITLE IS {title}\n\n\n")
     fig = px.scatter(df,
                      y=column,
                      x=x,
                      color=attr,
                      title=title,
                      custom_data=[attr])
+
     fig.update_traces(mode='lines+markers')
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(type='linear')
@@ -58,10 +61,30 @@ def create_pie_plot(df, value, names, title, themes):
     return fig
 
 def create_choro_plot(df, value, themes):
-    fig = px.choropleth(df, locations='iso', color=value, hover_data=['name','deaths']) #used to negate a 'divide by zero' error on countries with 0 cases, deaths, recoveries, etc...
+    fig = px.choropleth(
+        df,
+        locations='iso',
+        color=value,
+        color_continuous_scale="Viridis",
+        range_color=(0, 12),
+        hover_data=['name', 'deaths','recoveries', 'active', 'fatality_rate']
+    )  #used to negate a 'divide by zero' error on countries with 0 cases, deaths, recoveries, etc...
     fig.layout.plot_bgcolor = themes["deep_ocean_blue"]
     fig.layout.paper_bgcolor = themes["deep_ocean_blue"]
-    fig.update_layout(font_color=themes["sundance_yellow"], template = "plotly_dark", height=600)
+    fig.update_xaxes(fixedrange=True)
+    fig.update_yaxes(fixedrange=True)
+    fig.layout.update(dragmode=False)
+    fig.update_layout(
+        font_color=themes["sundance_yellow"],
+        template = "plotly_dark",
+        hoverlabel=dict(
+                bgcolor="rgb(215,226,40)",
+                font=dict(color='#ffffff', size=14
+            ),
+        ),
+        height=600
+    )
+
     return fig
 
 def create_radar_plot(df, themes):
@@ -134,23 +157,9 @@ def reset():
 ##############################################################################
 #                            Data Fetching Functions                         #
 ##############################################################################
-def get_credentials():
-    try:
-        api_info = {
-            "countries_endpoint": os.environ['countries_endpoint'],
-            "location_endpoint": os.environ['location_endpoint'],
-            "provinces_endpoint": os.environ['province_location_endpoint'],
-            "totals_endpoint": os.environ['total_states_endpoint'],
-            "population_endpoint": os.environ['population_endpoint'],
-            "headers": {os.environ['api_key']: os.environ['key'], os.environ['host_addr']: os.environ['host']}
-        }
-    except KeyError:
-        sys.stderr.write("FATAL ERROR: could not obtain api credentials!")
-        sys.exit(1)
-    return api_info
 
 def fetch_location_properties():
-    credentials = get_credentials()
+    global credentials
     headers=credentials['headers']
     countries_request = requests.get(credentials['location_endpoint'], headers=headers)
     if[countries_request.status_code == "ok"]:
@@ -170,8 +179,11 @@ def fetch_location_properties():
 #######################################################################################################
 #                                        Table Population Methods                                     #
 #######################################################################################################
+
+
+
 def populate_tables():
-    credentials = get_credentials()
+    global credentials
     last_time = get_last_time()
     start = last_time.time
     last_country = last_time.country
@@ -281,6 +293,7 @@ def populate_tables():
                 else:
                     sys.stderr.write(f"could not get population data for {country} on {current_date}")
                 country.save()
+
             current_date += day
         now = datetime.date.today().strftime("%Y-%m-%d")
     except Exception as e:
@@ -298,9 +311,9 @@ def clear_tables():
 def populator():
     uin = input("clear tables (y/n)? ")
     reset_r = input("reset update records (y/n)? ")
-    if uin.lower() == "y":
-        clear_tables()
-    if reset_r.lower() == "y":
-        reset()
+    # if uin.lower() == "y":
+    #     clear_tables()
+    # if reset_r.lower() == "y":
+    #     reset()
     populate_tables()
-# populator()
+#populator()

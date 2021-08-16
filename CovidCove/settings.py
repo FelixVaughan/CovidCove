@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,9 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("secret_key") #'django-insecure-8^^h(mr6hbm%%ai1t$64gkhitba$6^2hdjfewh+kl@)9#6o&ue'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['gunicorn']
+ALLOWED_HOSTS = ['gunicorn', '127.0.0.1']
 
 
 # Application definition
@@ -59,7 +58,7 @@ MIDDLEWARE = [
     'django_plotly_dash.middleware.BaseMiddleware',
     'django_plotly_dash.middleware.ExternalRedirectionMiddleware' #might cause some issues if not actually used
 ]
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_DIRS = []
 
 PLOTLY_COMPONENTS = [
     'dash_core_components',
@@ -96,14 +95,15 @@ WSGI_APPLICATION = 'CovidCove.wsgi.application'
 
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'mega.sqlite3,',
         # 'NAME': BASE_DIR / 'db.sqlite3',
-        'ENGINE': 'django.db.backends.postgresql',
-        'USER': os.getenv("DB_USER"),
-        'NAME': os.getenv("DB_USER"),
-        'PASSWORD': os.getenv("DB_PASS"),
-        'HOST': 'chunee.db.elephantsql.com',
-        'PORT': '5432',
+        # 'ENGINE': 'django.db.backends.postgresql',
+        # 'USER': os.getenv("DB_USER"),
+        # 'NAME': os.getenv("DB_USER"),
+        # 'PASSWORD': os.getenv("DB_PASS"),
+        # 'HOST': 'chunee.db.elephantsql.com',
+        # 'PORT': '5432',
     }
 }
 
@@ -148,7 +148,7 @@ DATETIME_FORMAT = '%Y-%m-%d'
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
-# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
