@@ -97,23 +97,14 @@ def country_worker(date, country_name, iso):
         country.total_recoveries = country_recovered_overall
         country.total_confirmed = country_confirmed_overall
         country.regions = total_regions
-        # if (iso == "CAN"):
-        #     print(
-        #         f"{threading.current_thread().ident }   {country.deaths} {date}"
-        #     )
         if(total_regions):
             country.fatality_rate = (country_total_fr)/total_regions
-    else:
-        #log could not get data for date
-        pass
-    population_req = requests.get(f"{credentials['population_endpoint']}/{iso}")
-    if(population_req.status_code == 200):
-        pop = int(population_req.json()["population"])
-        country.pop = pop
-    else:
-        pass
-        # sys.stderr.write(f"could not get population data for {country} on {date}")
-    country.save()
+        population_req = requests.get(f"{credentials['population_endpoint']}/{iso}")
+        if(population_req.status_code == 200):
+            pop = int(population_req.json()["population"])
+            country.pop = pop
+        print(f"{country_name} on {date}: complete")
+        country.save()
 
 
 def get_last_time():
@@ -161,16 +152,12 @@ def populate_tables():
     last_time = get_last_time()
     date = last_time.time
     end_date = datetime.date.today()
-    ###
-    date = datetime.date(2020, 12, 31)
-    end_date = datetime.date(2021,2,27) #remember to delete
     if date == end_date:
         return
     num_threads = multiprocessing.cpu_count() * 2
     pool = ThreadPoolExecutor(num_threads)
     try:
         while date <= end_date:
-            print(f"retreiving for {date}")
             fetch_global_stats(date)
             for i in range(country_index, len(countries) - 1):
                 country = countries[i][0]  #get iso
@@ -186,8 +173,38 @@ def populate_tables():
         print("shutdown completed.")
         update_time(date, "n/a")
 
-user_input = input("delete tables and repopulate? ")
-if user_input.lower() == "y":
-    Global.objects.all().delete()
-    Country.objects.all().delete()
-    populate_tables()
+
+def delete_country_dups():
+    all = Country.objects.all()
+    pure = Country.objects.order_by('time', 'name').distinct('time', 'name')
+    unpure = all.difference(pure)
+    for bye in unpure:
+        print(bye)
+        bye.delete()
+
+
+def delete_global_dups():
+    all = Global.objects.all()
+    pure = Global.objects.order_by('time').distinct('time')
+    unpure = all.difference(pure)
+    for bye in unpure:
+        print(bye)
+        bye.delete()
+
+def delete_dups():
+    delete_country_dups()
+    delete_global_dups()
+
+
+def modify_tables_before_launch():
+    user_input = input("Delete tables? ")
+    if user_input.lower() == "y":
+        Global.objects.all().delete()
+        Country.objects.all().delete()
+
+    user_input = input("Reset TTS? ")
+    if user_input.lower() == "y":
+        reset()
+    user_input = input("Repopulate tables? ")
+    if user_input.lower() == "y":
+        populate_tables()

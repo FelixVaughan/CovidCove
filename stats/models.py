@@ -18,7 +18,7 @@ class DailyRecords(models.Model):
 
 
 class Location(models.Model):
-    name = models.CharField(max_length=20, default="Worldwide" ,blank=False, editable=False)
+    name = models.CharField(max_length=500, default="Worldwide" ,blank=False, editable=False)
     active = models.IntegerField(default=0)
     recoveries = models.IntegerField(default=0)
     deaths = models.IntegerField(default=0)
@@ -27,8 +27,8 @@ class Location(models.Model):
     total_recoveries = models.IntegerField(default=0)
     total_deaths = models.IntegerField(default=0)
     total_confirmed = models.IntegerField(default=0)
-    time_as_string = models.CharField(max_length=10, default="n/a")
-    time = models.DateField(max_length=10) 
+    time_as_string = models.CharField(max_length=500, default="n/a")
+    time = models.DateField(max_length=500) 
     fatality_rate = models.DecimalField(
         default=0.00, decimal_places=2, max_digits=4)
 
@@ -38,7 +38,7 @@ class Location(models.Model):
 
 
 class Country(Location):
-    iso = models.CharField(max_length=3, editable=False, default="N/A")
+    iso = models.CharField(max_length=500, editable=False, default="N/A")
     regions = models.IntegerField(default=-1)
     pop = models.IntegerField(default=-1) #population
     def __str__(self):
@@ -59,7 +59,7 @@ class Global(Location):  # Stores the global total
 
 # should only ever be one entry in this table. Stores the date the db was last refreshed
 class Last_update(models.Model):
-    time = models.DateField(default=datetime.date(2019,12,31), max_length=10)
-    country = models.CharField(default="Palau", max_length=20)
+    time = models.DateField(default=datetime.date(2019,12,31), max_length=500)
+    country = models.CharField(default="Palau", max_length=500)
     def __str__(self):
         return self.time

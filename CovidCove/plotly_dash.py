@@ -89,7 +89,7 @@ app.layout = dbc.Container(
                         dcc.Dropdown(id='stat_to_plot_choice',
                             options=[{
                                 'label': i,
-                                'value': i
+                                'value': i.replace(" ", "_"),
                             } for i in dropdown_options],
                             value=country_dataset.columns[0]
                         ),
@@ -326,5 +326,3 @@ def create_filtered_dataframe(countries):
         data["df"] = df.to_json(date_format='iso')
     return data
 
-#todo: make respnsive with more bootstrap (couldalso fix the autorescaling thats happening)
-#todo: log the results of the choropleth and make sure it's not zoomable

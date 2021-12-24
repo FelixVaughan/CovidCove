@@ -19,7 +19,6 @@ load_dotenv()
 
 
 def create_line_plot(df, x, column, attr, title, themes):
-    print(f"\n\n\nTITLE IS {title}\n\n\n")
     fig = px.scatter(df,
                      y=column,
                      x=x,
@@ -142,7 +141,6 @@ def update_time(time, country):
     last_date.time = time
     last_date.country = country
     last_date.save()
-    print(f"State save complete. time is {last_date.time}. Country is {last_date.country}")
 
 def reset():
     if(len(Last_update.objects.all()) < 1):
@@ -194,18 +192,18 @@ def populate_tables():
     if start == end:
         return
     day = datetime.timedelta(days=1)
-    current_date = datetime.date(2021, 1, 1) #start
+    current_date = start
+    current_date = datetime.date(2021,8,15)
     country_name = ""
     headers=credentials['headers']
     try:
         while current_date <= end:
-            print(f"collecting data for {current_date}")
+            print(f"getting data for {current_date}")
             try:
                 global_data_request = requests.get(credentials['totals_endpoint'], headers=headers, params={"date": current_date})
             except requests.exceptions.ConnectionError:
                 time.sleep(15)
                 global_data_request = requests.get(credentials['totals_endpoint'], headers=headers, params={"date": current_date})
-                #sometimes due to too many connections a timeout occurs. This remedies that.
             if(global_data_request.status_code == 200):
                 data = global_data_request.json()['data']
                 entry = Global(time=current_date, time_as_string=str(current_date))
@@ -219,13 +217,7 @@ def populate_tables():
                     entry.recoveries = data['recovered_diff']
                     entry.active = data['active_diff']
                     entry.fatality_rate = data['fatality_rate']
-                else:
-                    pass
-                    #log could not get data for date
                 entry.save()
-            else:
-                #log failure
-                pass
             try:
                 locations = json.load(open("cleaned_data.json","r"))
             except FileNotFoundError:
@@ -283,21 +275,17 @@ def populate_tables():
                     country.regions = total_regions
                     if(total_regions):
                         country.fatality_rate = (country_total_fr)/total_regions
-                else:
-                    #log could not get data for date
-                    pass
-                population_req = requests.get(f"{credentials['population_endpoint']}/{iso}")
-                if(population_req.status_code == 200):
-                    pop = int(population_req.json()["population"])
-                    country.pop = pop
-                else:
-                    sys.stderr.write(f"could not get population data for {country} on {current_date}")
-                country.save()
+                    population_req = requests.get(f"{credentials['population_endpoint']}/{iso}")
+                    if(population_req.status_code == 200):
+                        pop = int(population_req.json()["population"])
+                        country.pop = pop
+                    else:
+                        sys.stderr.write(f"could not get population data for {country} on {current_date}")
+                    country.save()
 
             current_date += day
         now = datetime.date.today().strftime("%Y-%m-%d")
     except Exception as e:
-        sys.stderr.write(f"Unexpected error:\n{e}\nSaving state...")
         sys.stdout.write(f"Unexpected error:\n{e}\nSaving state...")
     finally:
         update_time(current_date,country_name)
@@ -311,9 +299,8 @@ def clear_tables():
 def populator():
     uin = input("clear tables (y/n)? ")
     reset_r = input("reset update records (y/n)? ")
-    # if uin.lower() == "y":
-    #     clear_tables()
-    # if reset_r.lower() == "y":
-    #     reset()
+    if uin.lower() == "y":
+        clear_tables()
+    if reset_r.lower() == "y":
+        reset()
     populate_tables()
-#populator()
