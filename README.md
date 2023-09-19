@@ -17,28 +17,9 @@ Staying informed about the prevailing circumstances of the COVID-19 pandemic is 
 - **Docker** – Containerization with Docker ensures a consistent environment, enhancing the deployment process and facilitating scalability.
 - **Nginx** – Utilizing Nginx to manage HTTP traffic and ensure optimal performance, security, and scalability.
 
-## Getting Started
-
-To get this project up and running locally, you'll need to have the following installed:
-
-- Python
-- Docker
-- Nginx
-
-_Follow the detailed setup guidelines in the INSTALLATION.md file to set up your development environment._
-
-## Contribution
-
-We welcome contributions from the developer community. Please refer to the CONTRIBUTING.md file for guidelines on how to contribute to this project.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE.md file for details.
-
 ## Acknowledgements
 
 - [Johns Hopkins University](https://coronavirus.jhu.edu/) for providing reliable and timely data to power this project.
 - The global community of healthcare workers and organizations working tirelessly to manage and contain the COVID-19 pandemic.
 
-_For further information and support, please refer to our [FAQ section](./FAQ.md) or reach out to us through our [contact page](./CONTACT.md)._
 
