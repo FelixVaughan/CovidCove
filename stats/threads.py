@@ -205,6 +205,9 @@ def modify_tables_before_launch():
     user_input = input("Reset TTS? ")
     if user_input.lower() == "y":
         reset()
-    user_input = input("Repopulate tables? ")
+    user_input = input("Populate tables? ")
     if user_input.lower() == "y":
         populate_tables()
+
+
+modify_tables_before_launch()
